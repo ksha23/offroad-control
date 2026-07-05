@@ -20,15 +20,15 @@ C++ tools for collecting tire force data from SCM deformable terrain using Chron
 | `collect_scm_data_fast.cpp` | Optimized parallel collector with OpenMP, subprocess batching, and memory management |
 
 > Note: the temporal / time-series collectors (`collect_temporal_data.{py,cpp}`)
-> were archived 2026-07-05 to `archive/2026-07-05_data_collection_legacy/` — the
+> are not present in this repo (recover from git history) — the
 > temporal-feature experiment did not clear the rear-Fy structural floor.
 
 ## Building
 
-Both targets are built as part of the SCM_Teleop CMake project:
+Both targets are built as part of the CMake project:
 
 ```bash
-cd /path/to/chrono-HIL/build
+cd build
 cmake ..
 cmake --build . --target collect_scm_data collect_scm_data_fast
 ```
@@ -116,13 +116,13 @@ Each batch runs in a subprocess that exits after completion, fully releasing mem
 
 ---
 
-## collect_temporal_data (Temporal/Time-Series) — ARCHIVED 2026-07-05
+## collect_temporal_data (Temporal/Time-Series) — not present
 
 The temporal / time-series tire-force collectors (`collect_temporal_data.py`
-and `.cpp`) were archived to `archive/2026-07-05_data_collection_legacy/`. They
+and `.cpp`) are not present in this repo (recover from git history). They
 fed an experiment on temporal features (`d_v, d_yaw` and transient tire
-dynamics) that the paper found does **not** clear the rear-Fy structural floor,
-so they are no longer part of the training pipeline.
+dynamics) that does **not** clear the rear-Fy structural floor,
+so they are not part of the training pipeline.
 
 ---
 

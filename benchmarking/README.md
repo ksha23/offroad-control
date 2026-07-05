@@ -6,7 +6,7 @@ timestamped folder under `benchmarking/results/<prefix>_<ts>/` with:
 - `manifest.csv` — exact command and sweep settings
 - `results.csv` — one row per Chrono run
 - `summary_*.csv` — aggregated KPIs
-- `raw/<idx>_*/` — per-run logs, diagnostic CSVs, collision/shield CSVs
+- `raw/<idx>_*/` — per-run logs, diagnostic CSVs, collision/safety-filter CSVs
 - `figures/` — PNG figures the paper picks up
 
 Sensor noise is enabled by default in every script; do not add a
@@ -15,10 +15,11 @@ Sensor noise is enabled by default in every script; do not add a
 ## Environment
 
 ```bash
-source ~/miniconda3/etc/profile.d/conda.sh && conda activate sim
-export ACADOS_SOURCE_DIR=~/Documents/sbel/acados
-cd project/SCM_Final
+source ~/miniconda3/etc/profile.d/conda.sh && conda activate scm-terrain
 ```
+
+Run from the repo root. Export `ACADOS_SOURCE_DIR` and the from-source
+PyChrono paths per `SETUP.md` before launching any sweep.
 
 ## Orchestrator (preferred)
 

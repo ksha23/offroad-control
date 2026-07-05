@@ -28,7 +28,7 @@ or targeting.
 - **Source**: open-loop Chrono SCM single-tyre rig (`ChTireTestRig`)
   driven by quadratic `κ(t)` and `α(t)` polynomials reaching `(κ*, α*)`
   with target rates `(dκ/dt, dα/dt)` at the measurement window.
-- **Generator**: [`data_collection/collect_rate_data.cpp`](../../../SCM_Teleop/data_collection/collect_rate_data.cpp)
+- **Generator**: [`data_collection/collect_rate_data.cpp`](../../data_collection/collect_rate_data.cpp)
   built into `build/bin/collect_rate_data`.
 - **Aggregated CSV**: [`data/tire_rig/rate_paper118_v2_15k.csv`](../../data/tire_rig/rate_paper118_v2_15k.csv)
   — 15,000 valid LHS samples. Collected with `--threads 16 --batch-size

@@ -64,9 +64,8 @@ MLP overall.
 
 Repro: `benchmarking/closed_loop_estimator_compare_fused.py` (backends).
 The probe-amplitude sweep that confirmed active probing does NOT rescue
-closed-loop sand was archived (negative result) as
-`nnukf_probe_sweep.py` (2026-06-08 active-probing experiment); those
-archives are kept in the original chrono-HIL working copy, not in this repo.
+closed-loop sand (negative result, `nnukf_probe_sweep.py`) is not present
+in this repo; recover it from git history.
 
 ## Stage F: root cause of the firm-sand failure, and the fix
 

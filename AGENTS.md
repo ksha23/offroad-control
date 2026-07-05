@@ -1,23 +1,21 @@
-# AGENTS.md — onboarding for any agent (or human) picking up terrain-aware-offroad-control
+# AGENTS.md — onboarding for any agent (or human) picking up offroad-control
 
-You are working in the **terrain-aware-offroad-control** repo, extracted
-standalone from the original `chrono-HIL/project/SCM_Final` working tree. The
-paper draft at `my_paper/paper.tex` is the single source of truth for what has
-been built and what has been claimed; the compiled PDF is at `my_paper/paper.pdf`.
+You are working in the **offroad-control** repo. The
+paper source at `my_paper/paper.tex` is the single source of truth for what has
+been built and what has been claimed; build the PDF with `tectonic my_paper/paper.tex`.
 Setup (conda env + from-source PyChrono/acados) is in `SETUP.md`; large
 data/results are restored via `data_sync/data_sync.sh pull` (see `DATA.md`).
 
-Several previously-explored research threads are NOT part of the current paper
-and were removed from this repo (they remain in the original chrono-HIL working
-copy, which is where "archived" below points):
+Several research threads are NOT part of the current paper
+and are not present in this repo:
 
 * The **PIL** (physics-informed online identification) terrain estimator and
   matching PIL tire model.
 * The **MPCC** (Model Predictive Contouring Control) variant — standard NMPC is
   now the only controller.
-* The **MPPI** and **SLSQP-NMPC** predictive safety shields — removed 2026-06;
-  the intent-preserving **DOB-CBF** is the only shipped safety filter.
-* The claim that the learned regressor *replaces* a UKF — it now stands on its
+* The **MPPI** and **SLSQP-NMPC** predictive safety shields — the
+  intent-preserving **DOB-CBF** is the only shipped safety filter.
+* The claim that the learned regressor *replaces* a UKF — it stands on its
   own closed-loop accuracy (a Dallas-style UKF remains an *offline* estimator
   baseline, paper §VI).
 * The **online residual** force/dynamics learning adapters.
@@ -52,15 +50,19 @@ teleoperation with command and camera latency.
    `simulation/runtime/hil_messages.py`). If a paper claim does not match the
    data, change the claim, not the metric. The standing test for any
    patch is "would a reviewer be surprised or offended by this?"
-6. **Keep the current story and the archive separated.** The paper
+6. **Keep the current story focused.** The paper
    and presentations emphasize the framework, terrain-aware NMPC,
    swappable safety filters, latency robustness, and the HIL
-   protocol. Archived ablations remain reproducible, but do not
-   reintroduce them into the paper or slides without intentional
+   protocol. Do not reintroduce removed ablations
+   into the paper or slides without intentional
    scope change.
 7. **Parallelize new sweeps.** Every Chrono-driving sweep is
-   embarrassingly parallel — each run is its own `launch_decoupled.py`
-   subprocess with its own ZMQ port pair. A fresh sweep script must
+   embarrassingly parallel. ROS 2 / Chrono::ROS is the default
+   sim<->controller transport and isolates parallel workers by a
+   per-run `ROS_DOMAIN_ID`; the ZeroMQ fallback
+   (`HIL_TRANSPORT=zmq` / `--transport zmq`) instead gives each run its own
+   `launch_decoupled.py` subprocess with a unique ZMQ port pair (see
+   `docs/ROS_INTERFACE.md`). A fresh sweep script must
    use a `ProcessPoolExecutor` and accept `--workers` (default 6 on
    the 24-core workstation). The reference pattern is in
    `data_collection/collect_closed_loop_data.py` and
@@ -124,7 +126,9 @@ with ProcessPoolExecutor(max_workers=workers) as ex:
 
 ### Rules
 
-1. **Stride ZMQ ports by `2 * idx`** so each worker gets a unique
+1. **Isolate workers by transport.** Under the default ROS 2 transport,
+   give each run a unique `ROS_DOMAIN_ID`. Under the ZeroMQ fallback,
+   **stride ZMQ ports by `2 * idx`** so each worker gets a unique
    sim/ctrl port pair. The retry-with-backoff in
    `simulation/runtime/hil_messages.py::ZMQPublisher.bind` covers brief TIME_WAIT
    races, but unique-by-construction ports avoid those entirely.
@@ -147,16 +151,14 @@ with ProcessPoolExecutor(max_workers=workers) as ex:
    compiling the common model once up front.
 2b. **Pin numpy/BLAS to 1 thread per run.** `benchmarking/common.py::
    run_process` sets `OPENBLAS_NUM_THREADS=MKL_NUM_THREADS=
-   NUMEXPR_NUM_THREADS=1` in each run's env. The MPPI shield's
-   vectorized rollout is many tiny matmuls; default 24-thread OpenBLAS
-   × N workers oversubscribes the box ~6× and inflated MPPI runs from
-   ~100 s to ~350 s (some hit the timeout). acados (BLASFEO) and
-   Chrono's OpenMP are unaffected. The MPPI shield rate-model path in
-   `surrogate_dynamics.py` is also vectorized (`_rate_mlp_batch`); the
-   old per-sample CasADi loop ran the shield at 0.03× real-time.
+   NUMEXPR_NUM_THREADS=1` in each run's env. Default 24-thread OpenBLAS
+   × N workers oversubscribes the box ~6× for numpy-heavy runs; single
+   thread per worker keeps the box balanced. acados (BLASFEO) and
+   Chrono's OpenMP are unaffected. (The removed MPPI shield's vectorized
+   rollout was the original motivation.)
 2c. **Per-run log dir.** `run_process` sets `HIL_RUN_LOG_DIR=<run_dir>`;
-   the collision logger (`chrono_sim_node`), CBF filter
-   (`safety/__init__`), and MPPI/NMPC shields (`predictive_shield`) all
+   the collision logger (`chrono_sim_node`) and CBF filter
+   (`safety/__init__`) both
    honour it and write per-run instead of into a shared global `logs/`.
    The old global path raced on truncation across workers
    (`FileNotFoundError`) and cross-contaminated collision counts. Env
@@ -181,8 +183,7 @@ with ProcessPoolExecutor(max_workers=workers) as ex:
    matrix drops from ~50 h to ~10 h. `benchmarking/run.py` now forwards
    `--workers N` and `--timeout S` to every Chrono sub-sweep
    (latency_profile, 0 runs, is skipped), e.g.
-   `run.py --tier paper --workers 12 --timeout 400`. MPPI runs finish in
-   ~60–110 s; keep `--timeout` ≥ 300.
+   `run.py --tier paper --workers 12 --timeout 400`. Keep `--timeout` ≥ 300.
 6. **Don't pickle `args`/`Namespace` through the pool.** Use a frozen
    dataclass per task that captures *only* the per-run inputs. Anything
    shared (output dir, sim time) can also go on the task or be imported
@@ -238,17 +239,18 @@ Full setup is in **`SETUP.md`**. In short:
 | `simulation/shared/` | Cross-cutting helpers: `collision_detector.py`, `live_debug_plotter.py`, `param_consistency.py`. |
 | `simulation/safety/` | The shipped DOB-CBF safety filter (`CBFSafetyFilter` in `safety/__init__.py`; `make_safety_filter`) AND the modular forward collision-warning module `collision_warning.py` (terrain-aware + latency-aware TTC warning; factory `make_collision_warning_system`). The predictive MPPI + SLSQP-NMPC shields were removed 2026-06; DOB-CBF is the only filter. |
 | `benchmarking/` | The single benchmarking folder. `run.py` is the orchestrator (flagged by `--tier` and `--only`); each sub-script tests one paper claim and writes a timestamped folder under `benchmarking/results/`. `collision_warning_test.py` is the standalone sweep that exercises the warning module under terrain × latency without a controller. `terrain_transition_benchmark.py` is the spatial soil-transition experiment (online estimator tracking a mid-run soil change). |
-| `nn_training/` | Trainers for the deployed/paper checkpoints only: `train_static_v3.sh` (rig static), `train_rate_v2.sh` (rig rate), `train_vehicle_lhs.sh` (whole-vehicle variants), `train_terrain_window_mlp.py` (window terrain estimator, deployed), `train_terrain_window_mlp_het.py` (heteroscedastic window MLP used by the Dallas UKF, §VI), `train_vehicle_fy_surrogate.py` (whole-vehicle Fy surrogate for the Dallas UKF, §VI), and `minimal_deployable_features.py` (regenerates `my_paper/paper_figures/feature_headroom.csv`, `tab:feature_headroom`). `train_variant.py` is the shared tire-NN trainer. Experimental trainers not backing a paper result (LSTM/low-n window variants, two-head surrogate, and the rear-Fy/sinkage/temporal feature probes) were archived 2026-07-03 — recover from git history or the original chrono-HIL working copy. |
+| `nn_training/` | Trainers for the deployed/paper checkpoints only: `train_static_v3.sh` (rig static), `train_rate_v2.sh` (rig rate), `train_vehicle_lhs.sh` (whole-vehicle variants), `train_terrain_window_mlp.py` (window terrain estimator, deployed), `train_terrain_window_mlp_het.py` (heteroscedastic window MLP used by the Dallas UKF, §VI), `train_vehicle_fy_surrogate.py` (whole-vehicle Fy surrogate for the Dallas UKF, §VI), and `minimal_deployable_features.py` (regenerates `my_paper/paper_figures/feature_headroom.csv`, `tab:feature_headroom`). `train_variant.py` is the shared tire-NN trainer. Experimental trainers not backing a paper result (LSTM/low-n window variants, two-head surrogate, and the rear-Fy/sinkage/temporal feature probes) are not present here — recover from git history. |
 | `data_collection/` | Chrono SCM tire-rig binaries (`collect_static_data.cpp`, `collect_rate_data.cpp`), closed-loop tire-surrogate collector (`collect_closed_loop_data.py`), the broad multi-axis terrain-estimator collector (`collect_broad_terrain.py`), and the Dallas-UKF SCM collectors (`run_dallas_scm.py` single scripted run, `collect_lhs_training_scms.py` parallel LHS sweep) |
 | `utilities/` | Closed-loop trace collection (`collect_diverse_terrains.py`, `collect_rich_excitation.py`, etc.) and offline diagnostics |
 | `nn_models/` | Checkpoints referenced by the runtime or a paper result only (10): deployed `terrain_window_mlp` + `vehicle_rate_64_32_lhs`; the `terrain_window_mlp_het` and `vehicle_fy_64_32` surrogates and the paper118-spec `rig_rate_paper118_v2_64_32` used by the Dallas-style UKF reproducer (`benchmarking/lib/ukf_paper_validation.py`, §VI); and the rig/vehicle × static/rate 32-16/64-32 family (`rig_rate_64_32`, `rig_rate_32_16`, `rig_static_32_16`, `vehicle_rate_32_16_lhs`, `vehicle_static_32_16_lhs`) exercised by the §III rig-vs-vehicle sweep and `make_fig1_4way.py`. Experimental checkpoints (two-head surrogate, speed-conditioned window MLP) were archived 2026-07-03. |
 | `data/` | Four categories: `tire_rig/`, `whole_vehicle/`, `terrain_estimator/` (window-MLP traces), and `dallas_scm/` (Dallas-UKF SCM logs: `lhs_train300/` training sweep, `lhs100/`+`lhs100_cl/` benchmarks, canonical `clay/sandy_loam/sand.npz`) |
-| `config/` | `latency_profiles/` (5G latency profile JSONs) and `terrain_yamls/` (LHS-sampled terrain configs) |
-| `paths/` | Reference-path definitions for the tracking/planning experiments |
-| `scripts/` | `data_sync.sh` — snapshot/restore the large off-machine artifacts (see `DATA.md`) |
+| `latency_profiles/` | 5G latency profile JSONs |
+| `config/` | `terrain_yamls/` (LHS-sampled terrain configs) |
+| `data/paths/` | Reference-path definitions for the tracking/planning experiments |
+| `data_sync/` | `data_sync.sh` — snapshot/restore the large off-machine artifacts (see `DATA.md`) |
 | `docs/` | Design docs: `FRAMEWORK_CONTRACTS.md`, `SCM_FORCE_MODEL.md` (how Chrono SCM computes tire forces + why static `Fx(κ)` surrogates floor), `LONGITUDINAL_FORCE_BALANCE_DESIGN.md`, `SURROGATE_RETRAIN_FINDINGS.md`, `NNUKF_CLOSED_LOOP_FINDINGS.md`, `HIL_DATA_COLLECTION_PROTOCOL.md`, and `PAPER_TABLE_VALUE_PROVENANCE.md` (paper number → source map) |
-| `my_paper/` | The paper draft (`paper.tex` / `paper.pdf`) and `paper_figures/`. Figures are refreshed by `publish_paper_figures.py` |
-| (external) | Large data/results are not in git; restore via `data_sync/data_sync.sh pull` (`DATA.md`). `archive/` of superseded work lives in the original chrono-HIL working copy, not here. |
+| `my_paper/` | The paper source (`paper.tex`, IEEEtran; build the PDF with `tectonic my_paper/paper.tex`) and `paper_figures/`. Figures are refreshed by `publish_paper_figures.py` |
+| (external) | Large data/results are not in git; restore via `data_sync/data_sync.sh pull` (`DATA.md`). Superseded work is moved to `archive/<YYYY-MM-DD_label>/` when needed; this repo has none yet. |
 
 ---
 
@@ -270,7 +272,7 @@ python benchmarking/run.py --tier pilot --only dob_cbf_ablation
 python benchmarking/run.py --tier pilot
 ```
 
-### Full paper matrix (the contract for `paper.pdf`)
+### Full paper matrix (the contract for `paper.tex`)
 ```bash
 python benchmarking/run.py --tier paper
 ```
@@ -290,7 +292,7 @@ reporting `[ok]/[SKIP/FAIL]` per figure. It does **not** re-run the
 Chrono sweeps — it re-plots from the newest `benchmarking/results/*`
 folders (and, for the §VI UKF figures, re-runs the lightweight estimator
 pass / a fast `--replot-only` from the existing `lhs100_*.csv`; no
-Chrono). As of 2026-07-03 **`run.py --tier paper` folds in every paper
+Chrono). **`run.py --tier paper` folds in every paper
 sweep** — including the ones that used to be run by hand (`rig_vs_vehicle`,
 `collision_warning`, `brake_test`, `convoy_cf`, `ff_drag`, the two
 `bench_terrain_estimators_lhs` OL/CL benches, and the closed-loop
@@ -298,9 +300,8 @@ Fused-UKF comparison) plus the `nn_wrong_prior` variant folded into the
 tire-model sweep — and runs `make_paper_figures.py` at the end. So the
 whole paper reproduces from that one command; running
 `make_paper_figures.py` on its own just re-plots from existing results. **All figure generators
-now live in `benchmarking/`** — the legacy figure-makers were consolidated
-here (the old `deliverables/` folder was retired 2026-07-05); the
-broken `make_fig_terrain_est` aggregator was replaced by
+live in `benchmarking/`**; the
+`make_fig_terrain_est` aggregator was replaced by
 `make_estimator_diag_figs.py` (Fig 6/7 from the benchmark CSVs).
 
 ### Human-in-the-loop rounds (paper §VI-A)
@@ -352,7 +353,7 @@ safety-vs-intrusiveness trade the paper argues about.
 | `rig_rate_64_32/` | **active** | Tire-rig rate surrogate retained for rig-vs-vehicle diagnostics |
 | `vehicle_rate_64_32_lhs/` | **default** (`DEFAULT_NN_MODEL`) | Whole-vehicle LHS rate surrogate used by standard NMPC and safety-filter sweeps |
 | `terrain_window_mlp/` | **active** (v7) | Online closed-loop terrain estimator, `n` output only. Trained on `traces_broad_v7/` (3600 scenarios spanning 180 LHS cells × scripted + closed-loop NMPC × 3 speeds × 3 paths × 2 bumpiness levels). 26-feature MLP (planar IMU + wheel slip + vertical-dynamics block: az std/p95, pitch-rate std/p95, roll-rate std). Best val RMSE 0.20, held-out LHS RMSE 0.098, median \|err\| 0.10 across 200 random Bekker-jittered evaluation terrains. |
-| `vehicle_static_32_16_lhs/` | **active** (referenced by paper §III) | Static-feature vehicle tire surrogate; restored from the archive because the force-RMSE-vs-CTE analysis (`archive/2026-07-05_deliverables_legacy/cte_vehicle_static_vs_rate.py`) actively cites it. |
+| `vehicle_static_32_16_lhs/` | **active** (referenced by paper §III) | Static-feature vehicle tire surrogate; the force-RMSE-vs-CTE analysis cites it. |
 | `rig_rate_paper118_v2_64_32/` | **active** (paper §VI baseline) | Paper118-spec rate-augmented rig surrogate trained on a fresh 15 k-sample uniform LHS sweep (slip angle ±0.6 rad, per-wheel Fz 2.5–11 kN, full Bekker–Mohr box). Kept as the paper118 reproduction baseline; the deployed NN-UKF tyre backend is now `vehicle_fy_64_32` (see below). |
 | `vehicle_fy_64_32/` | **active** (paper §VI deployed NN-UKF) | Whole-vehicle lateral-force surrogate that natively predicts $(F_{y,\mathrm{total}}, M_{\mathrm{yaw,total}})$ for the bicycle UKF, with no post-hoc calibration scalar. Trained on a 300-scenario disjoint uniform-LHS Chrono SCM sweep (`lhs_train300`, seed 7, `--widened-box`) with varied excitation (steer amp/period/speed + half open-loop / half PI-cruise throttle). **Critical fix:** the soil box is *widened* (Kphi from 0.3 MPa, cohesion from 300 Pa, janosi 0.008–0.028, n 0.35–1.35) so the canonical clay/dirt/sand presets are interior, not box-corner, points — the standard `TRAINING_RANGES_V6` box puts clay at a triple-edge corner and a standard-box surrogate fails clay badly. Held-out Fy R² = 0.90, M_yaw R² = 0.88. Benchmark results (100-LHS, two excitations): **OL** Buzhardt constant-throttle (paper headline, Fig. 8, `lhs100_fair.png`): NN-UKF median |Δn|/n = 12.9 % / 64 % within ±20 %, learned MLP 17.0 %, Bekker 34.3 %. **CL** PI-cruise 5 m/s (`lhs100_cl.png`): NN-UKF 9.4 % / 79 %, MLP 15.7 %, Bekker 20.9 %. Canonical spot-check (Fig. 10, `terrain_estimator_comparison.png`, amp 0.6 CL): NN-UKF clay 18.0 %, sandy loam 3.2 % (best of three on both soft soils), dry sand 10.8 %. See its `TRAINING_METADATA.md`. **Gotcha:** `run_dallas_scm.py --open-loop-throttle` must be ≥0 for a constant throttle; a negative value (e.g. −1) routes to PI cruise. Earlier code clipped −1 → 0 (no throttle) and produced degenerate stuck-vehicle logs — the bench passes −1 correctly but a *direct* CLI call did not until fixed. |
 
@@ -362,11 +363,9 @@ and known limitations.
 
 Retired snapshots from the v7 terrain-estimator development cycle
 (v6, v5 held-out variants, v7 held-out, v7 low-n-weighted, v7 LSTM
-smoke variant, v7 named snapshot with isotonic calibration) were moved
-to `archive/2026-05-25_nn_models_cleanup/`. Earlier static,
-axle-rate, and joint-estimator checkpoints are in
-`archive/2026-05-23_model_checkpoint_and_root_artifact_cleanup/`. The
-PIL tire model is in `archive/2026-05-23_final_cleanup/pil/`.
+smoke variant, v7 named snapshot with isotonic calibration), the
+earlier static/axle-rate/joint-estimator checkpoints, and the PIL tire
+model are not present in this repo — recover them from git history.
 
 The v7 terrain estimator pipeline (collector + trainer + eval scripts)
 is captured by `data_collection/collect_broad_terrain.py` and
@@ -444,9 +443,9 @@ Section VI's estimator-comparison figure:
   --test-frac 0.10`), 90/10 split by scenario. Aggregates ≈ 190 k
   labelled rows and stores `(weights.pt, scaler.pkl, config.json)`.
 
-Patches applied while reviving the reproducer:
-* `project/SCM_Teleop/data_collection/collect_rate_data.cpp` — fix-up
-  for the newer Chrono `ChTireTestRig` API (the removed
+Collector API notes:
+* `data_collection/collect_rate_data.cpp` — matches
+  the newer Chrono `ChTireTestRig` API (the removed
   `GetSlipAngle / GetLongSpeed / GetAngSpeed / GetLongitudinalSlip`
   methods are reconstructed from the local `slip_func / v_func /
   omega_func` objects) plus a widened slip-angle range (±0.6 rad,
@@ -510,11 +509,13 @@ tracking holds while the estimate catches up.
 Only one acados controller is shipped now:
 `acados_mpc_controller_node.py` + `acados_mpc_solver.py` is the
 standard reference-tracking NMPC and is the planner for every paper
-sweep. (MPCC was archived in 2026-05-23; see top of this doc.)
+sweep. (The MPCC variant is not present; see top of this doc.)
 
-`launch_decoupled.py` launches the sim + controller pair over ZeroMQ
-pub/sub, with the controller subscribing to `VehicleState` and
-publishing `ControlCommand`.
+`launch_decoupled.py` launches the sim + controller pair. ROS 2 /
+Chrono::ROS is the default transport (`docs/ROS_INTERFACE.md`); the
+self-contained ZeroMQ pub/sub fallback (`HIL_TRANSPORT=zmq` /
+`--transport zmq`) carries the same messages, with the controller
+subscribing to `VehicleState` and publishing `ControlCommand`.
 
 ---
 
@@ -529,10 +530,9 @@ publishing `ControlCommand`.
   `update_terrain(...)` so the online estimator can re-condition its
   grip-limited accel/brake authority on the live Bekker `n`.
 * The predictive **MPPI** shield and the SLSQP **NMPC** comparison
-  shield (formerly in `predictive_shield.py` + `surrogate_dynamics.py`)
-  were archived 2026-06-21 to `archive/2026-06-21_mppi_nmpc_removal/`.
-  `make_safety_filter` and `--safety-flavor` now reject those flavors
-  with a pointer to the archive; the registry stays swappable, but
+  shield are not present in this repo (recover from git history).
+  `make_safety_filter` and `--safety-flavor` reject those flavors;
+  the registry stays swappable, but
   DOB-CBF is the shipped instance.
 * The filter receives terrain updates from the controller over the
   same ZMQ socket as `ControlCommand` (terrain fields are piggy-backed
@@ -566,7 +566,7 @@ publishing `ControlCommand`.
 
 ---
 
-## ZMQ + handshake gotchas
+## ZMQ + handshake gotchas (ZeroMQ fallback transport)
 
 * `ZMQSubscriber.recv()` returns `(topic, msg)` — a tuple, not the
   message. Unpack it.

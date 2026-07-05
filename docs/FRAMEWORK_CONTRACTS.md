@@ -30,12 +30,17 @@ and CLI contracts for benchmark/runtime configuration.
    |
 +---------------+        +------------------+
 | Safety filter |<-------| Command source   |
-| DOB-CBF /     |        | NMPC cmd / G29 / |
-| MPPI / NMPC   |        | WASD             |
+| DOB-CBF       |        | NMPC cmd / G29 / |
+| (vanilla_cbf) |        | WASD             |
 +---------------+        +------------------+
 ```
 
 ## Process-Level Contracts
+
+These message contracts are transport-agnostic. ROS 2 / Chrono::ROS is
+the default transport (`docs/ROS_INTERFACE.md`); the self-contained
+ZeroMQ pub/sub fallback (`HIL_TRANSPORT=zmq` / `--transport zmq`) carries
+the same messages, defined in `simulation/runtime/hil_messages.py`.
 
 ### Simulation -> Controller: `VehicleState`
 
@@ -73,9 +78,8 @@ sim-side safety filter. The command is intentionally actuator-level:
 
 Swap rule: the standard acados NMPC, a learned policy, a ROS bridge,
 or a remote controller are interchangeable at this boundary as long as
-they publish `ControlCommand`. (The MPCC contouring variant explored
-earlier in this project was archived in 2026-05-23; only the standard
-NMPC ships in this repo.)
+they publish `ControlCommand`. (The MPCC contouring variant is not
+present in this repo; only the standard NMPC ships here.)
 
 ### Simulation Lifecycle: `SimStatus`
 
@@ -139,12 +143,13 @@ The returned `SafetyFilterResult` contains:
 
 Current safety-filter flavors:
 
-- `dob_cbf`: single-step QP safety filter. This is the most natural
-  intent-preserving HIL safety mechanism because it solves a
-  minimum-deviation problem around the operator command.
-- `mppi`: predictive rollout shield using the learned terrain/tire
-  surrogate and seeded recovery trajectories.
-- `nmpc`: gradient-based finite-horizon shield used as a comparison.
+- `dob_cbf`: single-step QP safety filter and the shipped filter. This is
+  the most natural intent-preserving HIL safety mechanism because it
+  solves a minimum-deviation problem around the operator command.
+- `vanilla_cbf`: textbook minimum-deviation CBF-QP baseline for comparison.
+
+DOB-CBF is the only shipped safety filter; the earlier `mppi`/`nmpc`
+predictive shields are not present.
 
 Swap rule: a new safety filter can replace any existing flavor if it is
 registered in `make_safety_filter` and returns `SafetyFilterResult`.
@@ -181,7 +186,7 @@ Useful swap flags:
 - `--terrain-estimator --terrain-estimator-mode n` (live `n̂`)
 - `--manual` for Logitech G29
 - `--wasd` for keyboard manual mode
-- `--safety-filter --safety-flavor dob_cbf|mppi|nmpc`
+- `--safety-filter --safety-flavor dob_cbf|vanilla_cbf`
 - `--no-safety-nn` for DOB-CBF without NN force prediction
 - `--mpc-blind-obstacles` to isolate the safety layer as the obstacle avoider
 - `--collision-warning --cw-tire-model <model>` for the advisory CW channel

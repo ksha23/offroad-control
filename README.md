@@ -1,4 +1,4 @@
-# terrain-aware-offroad-control
+# offroad-control
 
 Framework, benchmarks, and paper for *Terrain-Aware, Latency-Robust Control for
 Off-Road Autonomy and Teleoperation on Deformable Terrain*: a differentiable
@@ -7,9 +7,12 @@ NMPC speed planning, an asymmetric throttle disturbance observer, an
 intent-preserving DOB-CBF safety filter, 5G-latency teleoperation (with a
 frame-delayed driver POV), forward collision warning, and a counterfactual-replay
 evaluation — all on PyChrono's Soil Contact Model (SCM) deformable-terrain plant.
-Every figure and table in `my_paper/paper.pdf` regenerates from one command
+Every figure and table in the paper regenerates from one command
 — `python benchmarking/run.py --tier paper` (runs every paper sweep, then
-republishes all figures and table CSVs).
+republishes all figures and table CSVs). The two HIL/human figures
+(`hil_hud_pov.png`, `teleop_counterfactual_clearance.png`) need the G29
+and a human driver and are the only exceptions. Build the paper PDF
+with `tectonic my_paper/paper.tex`.
 
 - **Setup:** [`SETUP.md`](SETUP.md) — conda env (`environment.yml`) + from-source PyChrono/acados.
 - **Large data & raw results:** [`DATA.md`](DATA.md) — restore with `data_sync/data_sync.sh pull <tag>`.
@@ -20,7 +23,7 @@ republishes all figures and table CSVs).
 | Path | Contents |
 | --- | --- |
 | `simulation/` | The runtime, organized into role subpackages (below). Historical flat imports (`from nn_tire_model import …`) still resolve via the `flatpath.py` compatibility shim; new code should prefer the package form (`from simulation.tire_models.nn_tire_model import …`). |
-| `simulation/runtime/` | Process/plant layer: `chrono_sim_node.py` (PyChrono HMMWV plant), `launch_decoupled.py` (spawns sim + controller), `chrono_setup.py`, `hil_messages.py` (ZMQ wire types). |
+| `simulation/runtime/` | Process/plant layer: `chrono_sim_node.py` (PyChrono HMMWV plant), `launch_decoupled.py` (spawns sim + controller), `chrono_setup.py`, `hil_messages.py` (ZeroMQ-fallback wire types; ROS 2 / Chrono::ROS is the default transport, see `docs/ROS_INTERFACE.md`). |
 | `simulation/control/` | acados NMPC: `acados_mpc_controller_node.py`, `acados_mpc_solver.py`, `mpc_helpers.py`, `speed_profile.py`. |
 | `simulation/tire_models/` | Tire surrogates the MPC/CBF query: `nn_tire_model.py`, `analytical_tire_models.py`, `tire_input_features.py`. |
 | `simulation/estimators/` | Online terrain estimators: `learned_terrain_estimator.py` (window-MLP) and the `*_ukf_terrain_estimator.py` / `fused_terrain_estimator.py` UKF backends. |
@@ -28,7 +31,7 @@ republishes all figures and table CSVs).
 | `simulation/scenarios/` | Worlds and stimuli: `traffic.py`, `spatial_terrain.py`, `terrain_gen.py`, `reference_path.py`, `path_utils.py`, `latency_profile.py`. |
 | `simulation/shared/` | Cross-cutting helpers: `collision_detector.py`, `live_debug_plotter.py`, `param_consistency.py`. |
 | `simulation/framework/` | The six-extension-point contract: `interfaces.py` declares one `Protocol` per role (CommandSource, SafetyFilter, CollisionWarning, TireModel, TerrainEstimator, LatencyProfile); `registry.py` keeps a per-role `Registry`; `builtins.py` currently registry-wires the safety-filter, collision-warning, and latency-profile roles; `test_conformance.py` checks those registry-instantiated roles against their Protocols. |
-| `simulation/safety/` | The active DOB-CBF safety filter for intent-preserving HIL and the terrain- and latency-aware `collision_warning.py` warning module. (The earlier MPPI and SLSQP-NMPC shields were removed in 2026-06; DOB-CBF is the shipped filter.) |
+| `simulation/safety/` | The active DOB-CBF safety filter for intent-preserving HIL and the terrain- and latency-aware `collision_warning.py` warning module. DOB-CBF is the only safety filter; the earlier MPPI/NMPC shields are not present. A textbook `vanilla_cbf` baseline is retained for comparison. |
 | `simulation/sensors/`, `simulation/terrain_classifier/` | Chrono sensor wrappers and the RF terrain classifier node (unchanged by the reorg). |
 | `benchmarking/` | The full benchmarking suite. `benchmarking/run.py` is the single orchestrator; `publish_paper_figures.py` writes canonical figures into `my_paper/paper_figures/`. Sub-scripts test one paper claim each |
 | `nn_training/` | Canonical trainers: `train_static_v3.sh` (rig static), `train_rate_v2.sh` (rig rate), `train_vehicle_lhs.sh` (whole-vehicle variants), `train_terrain_window_mlp.py` (window terrain estimator), `train_vehicle_fy_surrogate.py` (whole-vehicle Fy surrogate for the Dallas UKF). `train_variant.py` is the shared tire-NN trainer |
@@ -36,11 +39,12 @@ republishes all figures and table CSVs).
 | `utilities/` | Closed-loop trace collection (`collect_diverse_terrains.py`, `collect_rich_excitation.py`) and diagnostic/offline utilities |
 | `nn_models/` | Active trained checkpoints only: one rig tire surrogate, one whole-vehicle tire surrogate, and one n-only terrain estimator |
 | `data/` | Four categories: `tire_rig/`, `whole_vehicle/`, `terrain_estimator/` (window-MLP traces), and `dallas_scm/` (Dallas-UKF SCM logs: `lhs_train300/` training sweep, `lhs100/` + `lhs100_cl/` benchmarks, canonical `clay/sandy_loam/sand.npz`) |
-| `config/` | `latency_profiles/` (generated 5G traffic profiles) and `terrain_yamls/` (LHS-sampled terrain configs for `closedloop_sine_lhs_fair_v2` and `rich` excitation sets) |
-| `paths/` | Reference-path definitions for the tracking/planning experiments |
-| `scripts/` | `data_sync.sh` — snapshot/restore the large off-machine artifacts (see `DATA.md`) |
-| `docs/` | Design docs: framework contracts, SCM force model, longitudinal force balance, surrogate/estimator findings, HIL protocol, and `PAPER_TABLE_VALUE_PROVENANCE.md` (paper number → source map) |
-| `my_paper/` | `paper.tex` (IEEEtran two-column), `paper.pdf`, `paper_figures/` (current figures + CSV backings), original ACMD abstract |
+| `latency_profiles/` | Generated 5G traffic profiles |
+| `config/` | `terrain_yamls/` (LHS-sampled terrain configs for `closedloop_sine_lhs_fair_v2` and `rich` excitation sets) |
+| `data/paths/` | Reference-path definitions for the tracking/planning experiments |
+| `data_sync/` | `data_sync.sh` — snapshot/restore the large off-machine artifacts (see `DATA.md`) |
+| `docs/` | Design docs: framework contracts, ROS interface, SCM force model, longitudinal force balance, surrogate/estimator findings, HIL protocol, and `PAPER_TABLE_VALUE_PROVENANCE.md` (paper number → source map) |
+| `my_paper/` | `paper.tex` (IEEEtran two-column; build the PDF with `tectonic my_paper/paper.tex`), `paper_figures/` (current figures + CSV backings), original ACMD abstract |
 | root | `environment.yml` + `SETUP.md` (setup), `DATA.md` (large-data restore), `AGENTS.md`/`CLAUDE.md` (contributor guide) |
 
 ## Framework contracts
@@ -112,7 +116,7 @@ regenerates every table CSV and figure in `my_paper/paper_figures/` (it invokes
 Nothing else needs to be run by hand.
 
 ```bash
-# THE command: every table + figure in paper.pdf (large; ~15 h on a 24-core box)
+# THE command: every table + figure in the paper (large; ~15 h on a 24-core box)
 python benchmarking/run.py --tier paper
 
 # Same orchestrator, smaller/faster:
@@ -270,10 +274,8 @@ picks them up if the timestamp suffix matches.
 | `rig_rate_paper118_v2_64_32/` | Paper118-spec rig NN (uniform LHS, widened α and Fz) used by the Dallas-style UKF reproduction; see `benchmarking/lib/ukf_paper_validation.py` |
 | `vehicle_fy_64_32/` | **Whole-vehicle Fy surrogate** for the Dallas-style state-augmented UKF — trained on a 300-scenario disjoint widened-box LHS sweep (`--widened-box`, half OL / half PI-cruise throttle). Predicts $(F_{y,\mathrm{total}}, M_{\mathrm{yaw,total}})$ directly, replacing the rig NN + rig-to-vehicle calibration scalar (no post-hoc scalar). Held-out Fy R² = 0.90. Drives the 100-LHS benchmark and canonical spot-check in paper §VI; see its `TRAINING_METADATA.md`. |
 
-Older static, axle-rate, and joint-estimator checkpoints were archived
-in `archive/2026-05-23_model_checkpoint_and_root_artifact_cleanup/`.
-The PIL tire model is archived in
-`archive/2026-05-23_final_cleanup/pil/`. Restore from those archives
+Older static, axle-rate, and joint-estimator checkpoints and the PIL
+tire model are not present in this repo. Recover them from git history
 only when replaying historical ablations.
 
 ## Datasets
@@ -282,26 +284,25 @@ The active data tree has exactly three categories:
 
 | Directory | Purpose |
 | --- | --- |
-| `data/tire_rig/` | Open-loop single-tire SCM rig CSVs (`scm_static_100k_v4.csv`, `rate_v2_100k.csv`, `rate_paper118_v2_15k.csv`) used by `train_static_v3.sh` / `train_rate_v2.sh` / the Dallas UKF baseline. The v1 sweeps (`rate_v1_100k`, `rate_paper118_30k`) were archived 2026-05-31 |
+| `data/tire_rig/` | Open-loop single-tire SCM rig CSVs (`scm_static_100k_v4.csv`, `rate_v2_100k.csv`, `rate_paper118_v2_15k.csv`) used by `train_static_v3.sh` / `train_rate_v2.sh` / the Dallas UKF baseline. The v1 sweeps (`rate_v1_100k`, `rate_paper118_30k`) are not retained |
 | `data/whole_vehicle/lhs/` | Closed-loop LHS-sampled training data used by `train_vehicle_lhs.sh` to produce `vehicle_rate_64_32_lhs` and its matched-architecture variants |
 | `data/terrain_estimator/` | Sliding-window traces used to train `terrain_window_mlp` — `traces_broad_v7/` (active; 3600 scenarios spanning 180 LHS cells × scripted+closed-loop × 3 speeds × 3 paths × 2 bumpiness), `traces_vertical_v5/` (predecessor, 400 scripted traces with vertical IMU channels) |
 
 Legacy `closed_loop_v1/v2/v3_rich/` datasets and the `5g_generated/`
-profile cache were archived to
-`archive/2026-05-23_final_cleanup/old_data/`.
+profile cache are not retained; recover them from git history if needed.
 
 ## Paper
 
 `my_paper/paper.tex` (IEEEtran two-column) is the self-contained full
-paper. Compile with `pdflatex paper.tex` twice (or `latexmk -pdf
-paper.tex`). `my_paper/abstract.tex` is the original single-page
-ACMD 2026 abstract.
+paper and the contract for what has been built and claimed; the PDF is a
+build artifact, not tracked. Build it with `tectonic my_paper/paper.tex`.
+`my_paper/abstract.tex` is the original single-page ACMD 2026 abstract.
 
 ## Tire-rig training (preserved baseline)
 
-The tire-surrogate pipeline went through two generations (paper
+The tire-surrogate pipeline has two generations (paper
 §III-C). The active root keeps one checkpoint from each generation;
-retired variants are archived.
+retired variants live in git history.
 
 | Generation | Where | What it does |
 | --- | --- | --- |
@@ -356,10 +357,9 @@ to recover the complete soil vector used by NMPC and the safety shield.
 The safety layer is presented as swappable rather than as a single
 hard-coded filter. DOB-CBF is the active filter because it solves for
 the closest safe command and therefore has the cleanest
-intent-preserving HIL story. The older MPPI and SLSQP-NMPC shield
-experiments remain archived for reproducibility but are not part of the
-current framework story.
+intent-preserving HIL story; a textbook `vanilla_cbf` baseline is
+retained for comparison. DOB-CBF is the only safety filter; the earlier
+MPPI/NMPC shields are not present.
 
-Archived exploratory ablations remain in `archive/` and in the raw
-paper-figure directory for reproducibility, but the current paper and
-slides should not present them as part of the selected framework story.
+Do not present removed exploratory ablations as part of the selected
+framework story in the paper or slides.

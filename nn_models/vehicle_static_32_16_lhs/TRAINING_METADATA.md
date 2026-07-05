@@ -2,7 +2,7 @@
 
 | | |
 | --- | --- |
-| Deployment status | **active** (referenced by paper §III as the static-feature whole-vehicle tire baseline; consumed by `benchmarking/make_fig1_4way.py` and `archive/2026-07-05_deliverables_legacy/cte_vehicle_static_vs_rate.py` for the static-vs-rate CTE comparison). |
+| Deployment status | **active** (referenced by paper §III as the static-feature whole-vehicle tire baseline; consumed by `benchmarking/make_fig1_4way.py` and the static-vs-rate CTE comparison). |
 | Architecture | static (non-rate) MLP, hidden = [32, 16], ≈ 946 params |
 | Inputs (11) | `slip_ratio, slip_angle, velocity, vertical_load, steering_rate, bekker_Kphi, bekker_Kc, bekker_n, mohr_cohesion, mohr_friction, janosi_shear` |
 | Outputs (2) | `(Fx, Fy)` — per-wheel, tire-frame longitudinal and lateral force |

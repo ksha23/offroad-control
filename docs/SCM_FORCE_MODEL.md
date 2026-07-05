@@ -44,8 +44,8 @@ points opposite the cell's slip velocity. Tire force = `Σ_cells (Fn + Ft)`.
   Because the rut's leading wall has a *tilted* normal `N̂`, the Bekker normal
   stress has a backward horizontal component. It is driven by **sinkage `z`**
   (→ `Fz`, soil), and is **slip-independent**. This is the **−400 N zero-slip
-  longitudinal force** measured in the separate `SCM_PIL` PIL exploration
-  (kept in the original chrono-HIL working copy, not in this repo) — not a bug,
+  longitudinal force** measured in the separate PIL exploration
+  (not present in this repo) — not a bug,
   real physics.
 - **Shear traction/drag** is the horizontal projection of `Σ Ft` (Janosi).
   Driven by slip *history*, opposes slip.

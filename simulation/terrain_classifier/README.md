@@ -48,7 +48,7 @@ controller to produce realistic driving excitation.
 To reproduce the v10 dataset, run both halves and merge:
 
 ```bash
-cd project/SCM_Teleop/simulation
+cd simulation
 
 # Pacejka MPC half (with sensor noise)
 conda run -n sim --no-capture-output \
@@ -116,7 +116,7 @@ The merged file is `data_v10_merged/training_data_v10.csv`.
 ### Step 2 — Train the Model
 
 ```bash
-cd project/SCM_Teleop/simulation
+cd simulation
 
 conda run -n sim --no-capture-output \
   python3 -m terrain_classifier.train_model \
@@ -153,7 +153,7 @@ This:
 The classifier runs as a separate process launched by `launch_decoupled.py`:
 
 ```bash
-cd project/SCM_Teleop/simulation
+cd simulation
 
 conda run -n sim --no-capture-output \
   python3 launch_decoupled.py \
@@ -266,8 +266,8 @@ terrain_classifier/
     └── training_data_v10.csv      # **Active** merged v10 dataset (16,300 samples)
 ```
 
-Legacy data (v5, v7, v8, v9, per-run CSVs) has been moved to
-`SCM_Teleop/archive/terrain_classifier_data_legacy/`.
+Legacy data (v5, v7, v8, v9, per-run CSVs) is not present in this repo;
+recover it from git history.
 
 ---
 

@@ -9,7 +9,7 @@ The two source builds are pinned as **git submodules** under `third_party/`
 versions with one command instead of hunting for them:
 
 ```bash
-git clone <this-repo> && cd terrain-aware-offroad-control
+git clone <this-repo> && cd offroad-control
 git submodule update --init --recursive third_party/acados   # ~acados + its deps
 git submodule update --init            third_party/chrono     # ~1 GB Chrono clone
 ```
@@ -103,13 +103,14 @@ python -c "import acados_template; print('acados_template OK')"
 `export ACADOS_SOURCE_DIR=...` must be set before any acados import (the
 controller preloads `libacados.so` from it via `ctypes`).
 
-## 4. ROS 2 transport (optional — the Chrono::ROS-native path)
+## 4. ROS 2 transport (default — the Chrono::ROS-native path)
 
-The sim<->controller link defaults to a self-contained ZeroMQ transport (nothing
-below is needed for that). Passing `--transport ros` instead runs the link over
-ROS 2 / Chrono::ROS: the rich telemetry rides rclpy topics (`/hil/port_*`) and
-the sim additionally exposes the chassis on the ROS graph via Chrono's own
-`ChROSPythonManager` (`/clock`, `~/chrono/vehicle/state/{pose,twist,accel}`).
+The sim<->controller link defaults to ROS 2 / Chrono::ROS: the rich telemetry
+rides rclpy topics (`/hil/port_*`) and the sim exposes the chassis on the ROS
+graph via Chrono's own `ChROSPythonManager` (`/clock`,
+`~/chrono/vehicle/state/{pose,twist,accel}`). A self-contained ZeroMQ transport
+is the fallback (`HIL_TRANSPORT=zmq` / `--transport zmq`); nothing in this
+section is needed for that path. See `docs/ROS_INTERFACE.md`.
 
 Prereqs (already present on this workstation): **ROS 2 Jazzy** (py3.12, matches
 `scm-terrain`) and the prebuilt colcon workspace holding `chrono_ros_interfaces`
@@ -126,7 +127,7 @@ python -c "import rclpy, pychrono.ros; print('ros stack OK')"
 ```
 
 Parallel sweeps must set a unique `ROS_DOMAIN_ID` per worker to isolate their DDS
-graphs. `--transport ros` is validated at closed-loop parity with ZeroMQ.
+graphs. The ROS and ZeroMQ transports run at closed-loop parity.
 
 ## 5. Verify
 

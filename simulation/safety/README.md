@@ -6,24 +6,17 @@ This is an in-process plugin boundary inside `chrono_sim_node.py`: the
 sim gathers the latest command, applies optional latency, calls the
 selected safety filter, and then passes the filtered command to Chrono.
 
-- **`dob_cbf` (the only shipped flavor):** Single-step DOB-CBF-QP filter.
+- **`dob_cbf` (the shipped safety filter):** Single-step DOB-CBF-QP filter.
   This is the most natural human-in-the-loop/shared-control safety
   mechanism because the QP minimizes deviation from the operator command
   while enforcing obstacle constraints.
+- **`vanilla_cbf` (comparison baseline):** textbook minimum-deviation
+  CBF-QP, kept for comparison against DOB-CBF.
 
-The predictive **`mppi`** and SLSQP **`nmpc`** shields (and the shared
-`surrogate_dynamics.py` / `predictive_shield.py` rollout) were **archived
-2026-06-21** to `archive/2026-06-21_mppi_nmpc_removal/`. `make_safety_filter`
-and `--safety-flavor` now reject those names with a pointer to the archive.
-The registry stays swappable, but DOB-CBF is the shipped instance. The
-architecture notes below are retained for the archived shields.
-
-## MPPI / NMPC architecture (archived 2026-06-21)
-
-Inspired by sampling-based MPC for off-road driving (e.g., Williams et al.)
-but adapted to a *safety filter* setting: the operator/autonomous command
-is the *reference*, and the shield projects onto a safe set defined by the
-NN-surrogate rollout cost.
+DOB-CBF is the only safety filter; the earlier predictive `mppi` and
+SLSQP `nmpc` shields are not present in this repo (recover from git
+history). `make_safety_filter` and `--safety-flavor` reject those names.
+The registry stays swappable.
 
 ## DOB-CBF architecture
 

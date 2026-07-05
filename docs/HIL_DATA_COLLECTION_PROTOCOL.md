@@ -14,10 +14,10 @@ measurable despite the variability.
 The HIL section makes **one** claim:
 
 > Under teleoperation latency, a swappable safety filter screening the
-> operator's commands keeps the vehicle safe, and the two shipped filters
+> operator's commands keeps the vehicle safe, and the two CBF filters
 > sit at different points of a **safety-vs-intrusiveness** trade-off
-> (DOB-CBF = minimum-deviation/intent-preserving; MPPI = predictive,
-> more aggressive).
+> (DOB-CBF = terrain-aware, disturbance-observer-compensated; vanilla_cbf =
+> textbook minimum-deviation CBF-QP baseline).
 
 It is **not** a study of human driving skill, nor a claim about "humans in
 general." That reframing is what makes the uncontrolled human tractable:
@@ -62,14 +62,14 @@ it below the filter effect you are trying to show.
 
 | Axis | Levels | Role |
 | --- | --- | --- |
-| Filter | `none`, `DOB-CBF`, `MPPI` (optionally `NMPC`) | **treatment** |
+| Filter | `none`, `DOB-CBF`, `vanilla_cbf` | **treatment** |
 | Latency | the learned **5G profile** on both channels (command/uplink + camera/downlink, the latter ≈1.45× via the profile's `camera` channel). Constant `--delays {0,0.15,0.30}` is the simpler alternative. | stress axis |
 | Scenario (`--convoy`) | dynamic-traffic convoy scenarios on a **straight forward course**: `lead_brake`, `cut_in`, `stalled`, `swerver`, `rear_approach` (all single-vehicle → real-time with the sensor camera). | **held fixed per operator** |
 | Terrain | clay (optionally + sand) | secondary; keep small |
 | Speed (pace), bumpiness | fixed (`--speeds 4`, `--bumpiness 0`) | held fixed |
 
 Keep the matrix **small**: a human cannot drive 1000 runs. A defensible
-core is `{none, DOB-CBF, MPPI} × {5G profile} × {3–5 convoy scenarios} ×
+core is `{none, DOB-CBF, vanilla_cbf} × {5G profile} × {3–5 convoy scenarios} ×
 rounds` — the 5G profile collapses the latency axis to one realistic
 condition, freeing budget for more scenarios. That is ~9–15 conditions per
 operator; with a couple of rounds, ~30–45 manned runs at ~30 s of driving
@@ -111,7 +111,7 @@ latency is not the focus.
 
 One command starts a session (G29 + sensor camera + live HMI overlay + the 5G
 profile, sweeping the convoy scenarios), logging `sim_diag.csv` (with the
-operator's raw commands) + shield/collision logs per round:
+operator's raw commands) + safety-filter/collision logs per round:
 
 ```bash
 ./collect_hil.sh                         # default session (15 rounds)
@@ -126,7 +126,7 @@ python benchmarking/human_delay_compensation_rounds.py \
     --manual-mode g29 --vis-mode sensor --live-hud \
     --latency-profile-json latency_profiles/5g_nhits_youtube_ul_scm_youtube_ul_smoke.json \
     --convoy lead_brake cut_in stalled swerver rear_approach \
-    --filters none dob_cbf mppi \
+    --filters none dob_cbf vanilla_cbf \
     --terrains clay --paths straight --speeds 4 --bumpiness 0 --rounds 1
 ```
 
@@ -181,7 +181,7 @@ sitting still does not count (`reached_goal`/`clean_success` in the results).
   "round k, scenario X, filter Y."
 - **Same scenario across the filter conditions a given operator sees** — the
   convoy presets are deterministic and the matrix holds (convoy, terrain,
-  latency) fixed across `none`/`DOB-CBF`/`MPPI`, so the comparison is paired by
+  latency) fixed across `none`/`DOB-CBF`/`vanilla_cbf`, so the comparison is paired by
   construction. (The counterfactual replay, below, makes this exact: the same
   recorded operator trace is re-run through each filter.)
 - Take breaks; **fatigue inflates collisions** and aliases onto whatever
@@ -251,7 +251,7 @@ never use the footage.
   *filtered* path the vehicle actually took, the obstacle, and the clearance.
   This is the in-paper, reproducible version of the "DOB-CBF takeover" — it
   shows a concrete intervention without needing video and is reconstructable
-  from `sim_diag.csv` + the shield log. Strongly recommended; it does more
+  from `sim_diag.csv` + the safety-filter log. Strongly recommended; it does more
   than the video clip for a reviewer.
 - **Video clips:** supplementary material / the talk only.
 
@@ -294,7 +294,7 @@ one concrete takeover → an annotated trajectory plot (+ a clip for the talk).
 
 ## 11. Minimal viable dataset (if time is short)
 
-`./collect_hil.sh` as-is — `{none, DOB-CBF, MPPI} × {5G profile} × {5 convoy
+`./collect_hil.sh` as-is — `{none, DOB-CBF, vanilla_cbf} × {5G profile} × {5 convoy
 scenarios, clay} × 1 round` = 15 manned runs — plus the two video clips and one
 annotated takeover trajectory. One operator (you), ~15 min of driving, honestly
 framed as a single-operator pilot. Then `convoy_counterfactual_eval.py

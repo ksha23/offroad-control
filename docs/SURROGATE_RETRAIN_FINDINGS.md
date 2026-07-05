@@ -6,9 +6,8 @@
 > not PID-keyed dirs) and the figure scripts moved to `benchmarking/`.
 > For the current workflow see `AGENTS.md` and `README.md`.
 
-This is the controlled, no-shortcut follow-up to
-[RIG_VS_VEHICLE_FINDINGS.md](RIG_VS_VEHICLE_FINDINGS.md). The earlier
-comparison left two confounds open: rig models had smaller MLPs than
+This is the controlled, no-shortcut follow-up to the rig-vs-vehicle
+comparison (paper §III.D). That comparison left two confounds open: rig models had smaller MLPs than
 the vehicle models, and the vehicle dataset was jittered around the
 three deployment-terrain presets. Both are fixed here.
 

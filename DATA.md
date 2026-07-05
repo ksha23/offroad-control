@@ -40,9 +40,9 @@ asset size limit); `pull` reassembles them.
 teleoperation counterfactual runs), and the figure source data.
 
 **Not in the snapshot (local-only, restore-on-demand or regenerate):**
-- `archive/` (~21 GB historical experiments) — recoverable from the local
-  machine; push a dedicated snapshot if needed:
-  `printf 'archive\n' > /tmp/l; LIST=/tmp/l data_sync/data_sync.sh push archive-2026-07-02`
+- any local `archive/<YYYY-MM-DD_label>/` of superseded work (create it when
+  retiring files) — snapshot it separately if needed:
+  `printf 'archive\n' > /tmp/l; LIST=/tmp/l data_sync/data_sync.sh push archive-<date>`
 - the full `benchmarking/results/` (~25 GB, mostly superseded debug runs) — only
   the paper-cited subset is snapshotted; the rest is regenerable via
   `benchmarking/run.py`.

@@ -19,10 +19,7 @@ For table values, see `../../docs/PAPER_TABLE_VALUE_PROVENANCE.md`; it maps each
 paper table to the backing CSV, result folder, or code location.
 
 **All figure generators live in `benchmarking/`.** The offline UKF engine they
-call — `benchmarking/lib/ukf_paper_validation.py` (state-augmented UKF) — was
-relocated there when the legacy `deliverables/` folder was retired (2026-07-05);
-the old `cte_vehicle_static_vs_rate.py` helper is archived under
-`archive/2026-07-05_deliverables_legacy/`.
+call is `benchmarking/lib/ukf_paper_validation.py` (state-augmented UKF).
 
 ## Generator per figure
 

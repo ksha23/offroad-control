@@ -2,7 +2,7 @@
 
 | | |
 | --- | --- |
-| Deployment status | **active** (online estimator inside the standard NMPC and the MPPI predictive shield) |
+| Deployment status | **active** (online estimator inside the standard NMPC and the DOB-CBF safety filter) |
 | Architecture | sliding-window MLP, hidden = [64, 64, 64], ReLU, ~10 k params |
 | Inputs (26) | hand-crafted statistics over a 4 s sliding window: `u/v/ω/ax/ay` means + stds + p95, wheel-slip mean/std/p95, lateral-grip, yaw-gain, longitudinal-drag, throttle mean + vertical-dynamics block (`az_std, az_p95, pitch_rate_std/p95, roll_rate_std`) |
 | Output | scalar Bekker sinkage exponent `n` (clamped to [0.4, 1.3] at inference) |
