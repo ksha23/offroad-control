@@ -1,0 +1,44 @@
+# --- Large data / results / paper / generated artifacts: NOT committed ---
+archive/
+# Ignore all of data/ EXCEPT the small, tracked reference-path CSVs (deterministic
+# source config the sim reads at runtime; regenerable via utilities/generate_reference_paths.py).
+data/*
+!data/paths/
+!data/5g_generated/
+benchmarking/results/
+experiment_results/
+presentation_package/
+plots/
+deliverables/runs*/
+deliverables/figures/
+deliverables/*.csv
+logs/
+
+# caches / generated
+__pycache__/
+*.pyc
+*.log
+
+# reference-paper PDFs (external, not code) and large classifier model blobs
+docs/*.pdf
+simulation/terrain_classifier/models/
+*.npz
+
+# all PDFs anywhere (reference papers + the compiled paper.pdf build artifact;
+# reproduce it with `tectonic my_paper/paper.tex`)
+*.pdf
+
+# LaTeX build artifacts (paper.tex + paper_figures/ + images/ stay tracked; the
+# compiled paper.pdf is NOT tracked -- build it from paper.tex)
+my_paper/*.aux
+my_paper/*.log
+my_paper/*.out
+my_paper/*.synctex.gz
+my_paper/*.bbl
+my_paper/*.blg
+my_paper/*.fls
+my_paper/*.fdb_latexmk
+my_paper/*.toc
+
+# redundant with my_paper/paper_figures/
+paper_figure_data/

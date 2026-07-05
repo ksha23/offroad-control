@@ -1,0 +1,11 @@
+link,scenario,none_collided,dob_collided,none_clearance_m,dob_clearance_m,clearance_gain_m,none_progress_m,dob_progress_m,mean_abs_dsteer,mean_abs_dthrottle
+5g_nhits_congested,convoy,1,0,-0.729,6.884,7.613,60.1,36.4,0.0114,0.0946
+5g_nhits_congested,lead_brake,1,0,-0.674,4.626,5.3,57.4,42.1,0.0465,0.1362
+5g_nhits_congested,platoon,1,0,-0.694,10.271,10.965,64.2,45.2,0.0078,0.0768
+5g_nhits_congested,rear_approach,0,0,0.586,0.553,-0.034,148.4,149.6,0.0009,0.0669
+5g_nhits_congested,stalled,0,1,1.032,-0.54,-1.572,71.6,12.9,0.2341,0.3663
+5g_nhits_geforce,convoy,1,0,-0.196,7.135,7.331,62.5,46.2,0.0562,0.0488
+5g_nhits_geforce,lead_brake,0,0,0.495,4.217,3.722,64.0,52.3,0.0022,0.1444
+5g_nhits_geforce,platoon,0,0,2.831,10.617,7.785,66.0,50.3,0.0029,0.0748
+5g_nhits_geforce,rear_approach,1,1,-2.702,-1.361,1.341,88.9,124.1,0.0017,0.4203
+5g_nhits_geforce,stalled,0,0,0.796,0.042,-0.754,53.8,33.5,0.0474,0.0849

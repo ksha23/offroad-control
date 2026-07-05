@@ -1,0 +1,3 @@
+distribution,n_runs,n_ok,n_abs_err_tail_mean,n_abs_err_tail_std,phi_abs_err_tail_deg_mean,phi_abs_err_tail_deg_std,rms_cte_m_mean,mean_speed_mps_mean,first_update_time_s_mean
+id,60,60,0.07912446324250608,0.044533810707798396,,,0.10204882815207408,4.177753734668226,4.2086
+ood,120,120,0.09907335166044613,0.06728385913297974,,,0.0718396773458076,4.364201122625454,4.2126

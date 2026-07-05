@@ -1,0 +1,209 @@
+[
+  {
+    "prefix": "mpc_tire_model_sweep",
+    "status": "ok",
+    "source": "/home/ksha/Documents/sbel/SCM_Final_repo/benchmarking/results/mpc_tire_model_sweep_20260703_235126",
+    "copied": [
+      "bench_tire_models.png",
+      "bench_tire_models_heatmap.png",
+      "bench_tire_models_distributions.png",
+      "tire_force_predicted_vs_actual.png",
+      "tire_force_prediction_error.png",
+      "bench_tire_models_results.csv",
+      "bench_tire_models_summary.csv"
+    ],
+    "merged_rows": 1215,
+    "merged_from": [
+      "/home/ksha/Documents/sbel/SCM_Final_repo/benchmarking/results/mpc_tire_model_sweep_20260703_235126"
+    ]
+  },
+  {
+    "prefix": "safety_filter_sweep_planner_aware",
+    "status": "ok",
+    "source": "/home/ksha/Documents/sbel/SCM_Final_repo/benchmarking/results/safety_filter_sweep_planner_aware_20260704_014302",
+    "copied": [
+      "safety_filter_planner_aware_summary.png",
+      "safety_filter_planner_aware_collision_heatmap.png",
+      "safety_filter_planner_aware_distributions.png",
+      "safety_filter_planner_aware_results.csv",
+      "safety_filter_planner_aware_summary.csv"
+    ],
+    "merged_rows": 1620,
+    "merged_from": [
+      "/home/ksha/Documents/sbel/SCM_Final_repo/benchmarking/results/safety_filter_sweep_planner_aware_20260704_014302"
+    ]
+  },
+  {
+    "prefix": "safety_filter_sweep",
+    "status": "ok",
+    "source": "/home/ksha/Documents/sbel/SCM_Final_repo/benchmarking/results/safety_filter_sweep_20260704_005717",
+    "copied": [
+      "safety_filter_summary.png",
+      "safety_filter_collision_heatmap.png",
+      "safety_filter_distributions.png",
+      "safety_filter_results.csv",
+      "safety_filter_summary.csv"
+    ],
+    "merged_rows": 810,
+    "merged_from": [
+      "/home/ksha/Documents/sbel/SCM_Final_repo/benchmarking/results/safety_filter_sweep_20260704_005717"
+    ]
+  },
+  {
+    "prefix": "dob_cbf_nn_ablation",
+    "status": "ok",
+    "source": "/home/ksha/Documents/sbel/SCM_Final_repo/benchmarking/results/dob_cbf_nn_ablation_20260704_031535",
+    "copied": [
+      "dob_cbf_nn_ablation_summary.png",
+      "dob_cbf_nn_ablation_heatmap.png",
+      "dob_cbf_nn_ablation_results.csv",
+      "dob_cbf_nn_ablation_summary.csv"
+    ],
+    "merged_rows": 1215,
+    "merged_from": [
+      "/home/ksha/Documents/sbel/SCM_Final_repo/benchmarking/results/dob_cbf_nn_ablation_20260704_031535"
+    ]
+  },
+  {
+    "prefix": "autonomous_obstacle_tire_model_sweep_dob_cbf_mpc_blind",
+    "status": "ok",
+    "source": "/home/ksha/Documents/sbel/SCM_Final_repo/benchmarking/results/autonomous_obstacle_tire_model_sweep_dob_cbf_mpc_blind_20260704_042344",
+    "copied": [
+      "autonomous_obstacle_tire_summary.png",
+      "autonomous_obstacle_collision_heatmap.png",
+      "autonomous_obstacle_clearance_heatmap.png",
+      "autonomous_obstacle_distributions.png",
+      "autonomous_obstacle_results.csv",
+      "autonomous_obstacle_summary.csv"
+    ],
+    "merged_rows": 1215,
+    "merged_from": [
+      "/home/ksha/Documents/sbel/SCM_Final_repo/benchmarking/results/autonomous_obstacle_tire_model_sweep_dob_cbf_mpc_blind_20260704_042344"
+    ]
+  },
+  {
+    "prefix": "autonomous_obstacle_tire_model_sweep_barrier_only",
+    "status": "ok",
+    "source": "/home/ksha/Documents/sbel/SCM_Final_repo/benchmarking/results/autonomous_obstacle_tire_model_sweep_barrier_only_20260703_220819",
+    "copied": [
+      "autonomous_obstacle_barrier_only_summary.png",
+      "autonomous_obstacle_barrier_only_collision_heatmap.png",
+      "autonomous_obstacle_barrier_only_clearance_heatmap.png",
+      "autonomous_obstacle_barrier_only_results.csv"
+    ],
+    "merged_rows": 3,
+    "merged_from": [
+      "/home/ksha/Documents/sbel/SCM_Final_repo/benchmarking/results/autonomous_obstacle_tire_model_sweep_barrier_only_20260703_220819"
+    ]
+  },
+  {
+    "prefix": "terrain_estimator_benchmark",
+    "status": "ok",
+    "source": "/home/ksha/Documents/sbel/SCM_Final_repo/benchmarking/results/terrain_estimator_benchmark_20260704_120426",
+    "copied": [
+      "closed_loop_estimator_learned.png",
+      "closed_loop_estimator_true_vs_estimated.png",
+      "closed_loop_estimator_error_heatmap.png",
+      "closed_loop_estimator_results.csv",
+      "closed_loop_estimator_summary.csv"
+    ],
+    "merged_rows": 180,
+    "merged_from": [
+      "/home/ksha/Documents/sbel/SCM_Final_repo/benchmarking/results/terrain_estimator_benchmark_20260704_120426"
+    ]
+  },
+  {
+    "prefix": "terrain_transition_benchmark",
+    "status": "ok",
+    "source": "/home/ksha/Documents/sbel/SCM_Final_repo/benchmarking/results/terrain_transition_benchmark_20260704_054310",
+    "copied": [
+      "terrain_transition_traces.png",
+      "terrain_transition_response.png",
+      "terrain_transition_results.csv",
+      "terrain_transition_summary.csv"
+    ],
+    "merged_rows": 30,
+    "merged_from": [
+      "/home/ksha/Documents/sbel/SCM_Final_repo/benchmarking/results/terrain_transition_benchmark_20260704_054310"
+    ]
+  },
+  {
+    "prefix": "terrain_transition_ol_benchmark",
+    "status": "no_match",
+    "source": null,
+    "copied": [],
+    "merged_rows": 0,
+    "merged_from": []
+  },
+  {
+    "prefix": "latency_profile_figure",
+    "status": "ok",
+    "source": "/home/ksha/Documents/sbel/SCM_Final_repo/benchmarking/results/latency_profile_figure_20260704_054957",
+    "copied": [
+      "latency_profile_timeseries.png",
+      "latency_profile_histogram.png",
+      "latency_profile_samples.csv",
+      "latency_profile_summary.csv"
+    ],
+    "merged_rows": 0,
+    "merged_from": [
+      "/home/ksha/Documents/sbel/SCM_Final_repo/benchmarking/results/latency_profile_figure_20260704_054957"
+    ]
+  },
+  {
+    "prefix": "latency_compensation_sweep",
+    "status": "ok",
+    "source": "/home/ksha/Documents/sbel/SCM_Final_repo/benchmarking/results/latency_compensation_sweep_20260704_054958",
+    "copied": [
+      "latency_compensation_summary.png",
+      "latency_compensation_collision_heatmap.png",
+      "latency_compensation_distributions.png",
+      "latency_compensation_results.csv",
+      "latency_compensation_summary.csv"
+    ],
+    "merged_rows": 810,
+    "merged_from": [
+      "/home/ksha/Documents/sbel/SCM_Final_repo/benchmarking/results/latency_compensation_sweep_20260704_054958"
+    ]
+  },
+  {
+    "prefix": "throttle_dob_ablation",
+    "status": "ok",
+    "source": "/home/ksha/Documents/sbel/SCM_Final_repo/benchmarking/results/throttle_dob_ablation_20260704_063538",
+    "copied": [
+      "throttle_dob_ablation_summary.png",
+      "throttle_dob_ablation_speed_heatmap.png",
+      "throttle_dob_ablation_distributions.png",
+      "throttle_dob_ablation_results.csv",
+      "throttle_dob_ablation_summary.csv"
+    ],
+    "merged_rows": 810,
+    "merged_from": [
+      "/home/ksha/Documents/sbel/SCM_Final_repo/benchmarking/results/throttle_dob_ablation_20260704_063538"
+    ]
+  },
+  {
+    "prefix": "tire_model_with_estimator_ablation",
+    "status": "ok",
+    "source": "/home/ksha/Documents/sbel/SCM_Final_repo/benchmarking/results/tire_model_with_estimator_ablation_20260704_072120",
+    "copied": [
+      "tire_model_with_estimator_summary.png",
+      "tire_model_with_estimator_rms_cte_heatmap.png",
+      "tire_model_with_estimator_distributions.png",
+      "tire_model_with_estimator_results.csv",
+      "tire_model_with_estimator_summary.csv"
+    ],
+    "merged_rows": 1620,
+    "merged_from": [
+      "/home/ksha/Documents/sbel/SCM_Final_repo/benchmarking/results/tire_model_with_estimator_ablation_20260704_072120"
+    ]
+  },
+  {
+    "prefix": "human_delay_compensation_rounds",
+    "status": "no_match",
+    "source": null,
+    "copied": [],
+    "merged_rows": 0,
+    "merged_from": []
+  }
+]
