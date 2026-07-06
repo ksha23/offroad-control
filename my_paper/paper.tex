@@ -1942,7 +1942,7 @@ even under the profile's outage spikes.
   \label{fig:latency_comp}
 \end{figure*}
 
-\subsection{Does delay-\emph{awareness} matter, or just having a filter?}
+\subsection{Isolating the value of delay-awareness}
 \label{sec:latency_ablation}
 
 The result above shows a filter helps under latency, but not that the filter's
@@ -1951,8 +1951,7 @@ delay-dependent stopping distance and forward-predicting over the round trip
 before acting --- is what helps, rather than merely screening the command at
 all. We isolate it with a deterministic ablation: the command path is delayed
 by $\Delta_\mathrm{cmd}$ in \emph{every} run, but the filter is either
-\emph{told} the delay ($\texttt{teleop\_delay}\!=\!\Delta_\mathrm{cmd}$,
-``aware'') or not ($\texttt{teleop\_delay}\!=\!0$, ``blind''); everything else
+\emph{told} the delay (``aware'') or not (``blind''); everything else
 is identical, and the same scripted worst-case commands (Sec.~\ref{sec:safety_convoy})
 are replayed, so blind-vs-aware is paired. We sweep it as a dose-response over
 six command delays ($0$ to $0.5\,$s) $\times$ $5$ convoy scenarios $\times$ three
@@ -2217,30 +2216,24 @@ is an integration check rather than a separate statistical safety claim.
 \label{sec:disc}
 %======================================================================
 
-Two recent threads are directly adjacent to this framework and merit
-explicit comparison. Onozuka et al.~\cite{Onozuka25} replace a
-terrain-parameter-dependent NN tire model with a physics-informed
-structure -- a Janosi saturating shear law wrapped around two small
-networks that supply the force coefficients -- and re-fit those
-coefficients online by stochastic gradient descent on state-derivative
+Two recent threads are directly adjacent to this framework.
+Onozuka et al.~\cite{Onozuka25} replace a terrain-parameter-dependent NN
+tire model with a physics-informed structure --- a Janosi saturating
+shear law wrapped around two small networks that supply the force
+coefficients --- re-fit online by gradient descent on state-derivative
 residuals. The approach is complementary to ours: they fold soil
-mechanics into a structured force law where we estimate the soil and
-re-condition an unstructured surrogate. A direct adaptation of their
-tire model into the per-axle interface of our acados solver improved
-offline force prediction (held-out $R^2_{F_y}$ from $0.35$ to $0.59$)
-but did not run stably in \emph{our} in-horizon NMPC, where the static
-formulation triggered QP failures on aggressive transients. We stress this
-is \emph{not} a fair head-to-head: their model is designed for the dedicated
-curvilinear-coordinate, wheelspeed-state MPC of~\cite{Onozuka25}, which we did
-not reimplement, so we draw \emph{no} superiority conclusion from it --- only
-that the two approaches are complementary (they structure the force law; we
-estimate the soil and re-condition an unstructured surrogate around it). Gupta et al.~\cite{Gupta24} compensate unmodeled dynamics with
-a reinforcement-learning residual on top of MPC; in a feasibility
-prototype on the same plant the residual closed less than $8\,\%$ of
-the residual tracking error and only at the largest model
-mismatch -- consistent with our own earlier finding that a learned
-dynamics residual offered little benefit on this plant -- so this
-paper does not adopt RL compensation.
+mechanics into a structured force law, whereas we estimate the soil and
+re-condition an unstructured surrogate. Adapting their tire model into
+our per-axle acados interface improved offline force prediction
+($R^2_{F_y}$ from $0.35$ to $0.59$) but did not run stably in our
+in-horizon NMPC, where the static formulation triggered QP failures on
+aggressive transients; since their model targets a dedicated
+curvilinear-coordinate, wheelspeed-state MPC we did not reimplement, this
+is a note on complementarity, not a comparison. Gupta
+et al.~\cite{Gupta24} compensate unmodeled dynamics with a
+reinforcement-learning residual on top of MPC; on this plant such a
+residual closed less than $8\,\%$ of the tracking error and only at the
+largest model mismatch, so we do not adopt RL compensation.
 
 The empirical evidence supports the central integration claim and the principal
 component choices. The
