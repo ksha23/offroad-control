@@ -218,21 +218,20 @@ Chrono::Vehicle simulates
 an HMMWV on a Soil Contact Model (SCM)~\cite{Krenn09} patch within
 Chrono::HIL~\cite{Zhou23}. The simulation and controller
 nodes run as separate operating-system processes and exchange
-messages over ROS~2 (DDS) topics, integrated the Chrono-native way
-through Chrono::ROS: the sim publishes the chassis body
+messages over ROS~2 (DDS) topics through Chrono::ROS: the sim
+publishes the chassis body
 state and clock through Chrono's own \texttt{ChROSManager} handlers,
 while the per-tick telemetry rides companion topics --- a vehicle-state
 message at the physics state rate ($100\,\mathrm{Hz}$),
 a control command at the controller rate ($10\,\mathrm{Hz}$),
-and a lifecycle status message. (A self-contained ZeroMQ transport is
-retained as a fallback for deployments without ROS~2.) The control
+and a lifecycle status message. The control
 command carries the most recent live terrain estimate as optional fields
 so the sim-side safety filter re-conditions itself without a separate
 high-priority channel; the deployed estimator is $n$-only, and the
 remaining Bekker--Mohr fields are mapped from $\hat n$ along the
 terrain manifold before attachment. Piggy-backing is required because
 the controller-to-simulation topic is latest-only (DDS \emph{keep-last}
-depth~1, matching the ZeroMQ conflating socket), which would drop a
+depth~1), which would drop a
 separate terrain-update message arriving between estimator ticks.
 
 \begin{figure*}[t]
@@ -241,8 +240,7 @@ separate terrain-update message arriving between estimator ticks.
   \caption{Shared-control framework. Yellow nodes are in-process
     extension points selected by the runtime factories; blue/green nodes
     are process-boundary or operator endpoints. Solid arrows are
-    runtime data flow over the ROS~2 / Chrono::ROS transport (ZeroMQ
-    fallback); dashed arrows are the
+    runtime data flow over the ROS~2 / Chrono::ROS transport; dashed arrows are the
     latency-affected operator paths; dotted arrows are tire-surrogate
     queries (build-time CasADi export plus per-tick safety-filter
     rollouts).}
@@ -665,13 +663,13 @@ retrain:
   jitter).
 \end{itemize}
 
-Offline force prediction on a held-out LHS test slice exposes the
-generalisation gap that the canonical-jitter eval set previously
-hid: the legacy whole-vehicle checkpoints' $R^2(F_y)$ drops from
+Offline force prediction on a held-out LHS test slice exposes a
+generalisation gap the canonical-jitter eval set hides: a
+canonical-jitter-trained whole-vehicle checkpoint's $R^2(F_y)$ drops from
 $+0.58$ on canonical-jitter data to $-0.30$ on LHS-terrain data,
-while the LHS-trained replacements hold $R^2 \approx 0.71$ on both
-eval sets. The retrained vehicle MLPs were not better at predicting
-in-distribution data; the legacy MLPs had been over-fitting the
+while the LHS-trained MLPs hold $R^2 \approx 0.71$ on both
+eval sets. The LHS-trained vehicle MLPs are not better at predicting
+in-distribution data; the canonical-jitter-trained MLPs over-fit the
 deployment-terrain neighbourhood.
 
 The controlled closed-loop tire-model sweep (432 runs, 6 surrogates
@@ -694,7 +692,7 @@ Per-tick force-prediction smoothness explains the shrinking gap:
 aggregated over the 432 runs, the LHS-trained vehicle surrogates have
 $\mathrm{std}(\dot F_y^{\mathrm{pred}})$ around $16$-$20$~kN/s, much
 closer to the rig surrogates' $14$~kN/s (the $32$-$16$ rig\_rate
-variant) than the legacy vehicle MLPs' $40$~kN/s. Wider
+variant) than the canonical-jitter-trained vehicle MLPs' $40$~kN/s. Wider
 training-terrain coverage acts as an effective low-pass on the
 closed-loop SCM signal in the same way LHS-independent sampling did
 for the rig.
@@ -802,9 +800,9 @@ as the safety filter and the collision-warning braking budget.
 
 The takeaway for deployment: the whole-vehicle pipeline is the right
 default \emph{when the training data is LHS-sampled across the same
-operating-point box the rig spans}. Replacing the legacy
-canonical-preset jitter with the LHS-terrain dataset closed the
-generalisation gap that the rig pipeline previously exposed; the
+operating-point box the rig spans}. Training on the LHS-terrain
+dataset rather than canonical-preset jitter closes the
+generalisation gap the rig pipeline exposes; the
 default DOB-CBF safety filter, which reads the surrogate as a static
 traction-ceiling query, pairs cleanly with either surrogate. The full
 retrain log -- the offline force-prediction tables on both evaluation
@@ -1133,9 +1131,9 @@ trained the UKF's NN on a single-tire rig (paper118 protocol) and
 wrapped it in a hand-tuned rig-to-vehicle gain
 ($1.15\times$ on $F_y$) to close the $\approx 15\,\%$ gap between
 single-tire rig forces and full-suspension HMMWV forces. The
-calibration was acceptable at the two soft-soil presets paper118
-reported but did not generalise to a broad LHS sweep, so we replaced
-it with a surrogate that natively predicts what the *whole vehicle*
+calibration is acceptable at the two soft-soil presets paper118
+reports but does not generalise to a broad LHS sweep; the surrogate
+instead natively predicts what the *whole vehicle*
 produces:
 \[
   \resizebox{\columnwidth}{!}{$\displaystyle
@@ -1983,7 +1981,7 @@ future work.)
 \label{sec:safety_scaling}
 
 DOB-CBF is a single small quadratic program solved once per control tick.
-Against the $100\,$ms ($10\,$Hz) shield budget its solve scales benignly with
+Against the $100\,$ms ($10\,$Hz) control-tick budget its solve scales benignly with
 the number of in-range obstacles $N$ (a rock and a traffic vehicle are
 identical $(x,y,r)$ entries, so $N$ counts both): a fraction of a millisecond
 at $N=0$ rising to only a few milliseconds at $N\!\sim\!100$. It therefore
@@ -2127,9 +2125,8 @@ total available braking force; $a_b(\hat n)=\sum F_{x,\mathrm{peak}}
 / m_{\mathrm{veh}}$. The resulting table runs from
 $a_b(0.4)\!\approx\!2.3\,\mathrm{m/s^{2}}$ (soft, clay-like) to
 $a_b(1.1)\!\approx\!4.7\,\mathrm{m/s^{2}}$ (firm, sand-like) --- both
-endpoints noticeably more conservative than the hand-tuned
-$2.5/6.0\,\mathrm{m/s^{2}}$ heuristic the implementation previously
-used. The live $\hat n$ from the online terrain estimator
+endpoints noticeably more conservative than a hand-tuned
+$2.5/6.0\,\mathrm{m/s^{2}}$ heuristic. The live $\hat n$ from the online terrain estimator
 (\S\ref{sec:estimator}) indexes into this table at runtime, so the
 warning is more conservative on soils that the vehicle cannot brake
 hard on.
@@ -2279,11 +2276,9 @@ Aggregated KPIs deduplicate on the run key
 $(\textit{variant},\,\textit{terrain},\,\textit{path},\,\textit{speed},\,
 \textit{bumpiness},\,\textit{seed})$, so a re-run cleanly fills only
 the missing cells without overwriting existing rows. Parallel sweep
-workers are isolated by a per-run ROS~2 domain (and, on the ZeroMQ
-fallback, a bind-retry with linear backoff that eliminates TIME\_WAIT
-races under rapid run cycling), and the publication step matches result
-folders by exact timestamp so that closely-named sweep variants are
-never conflated.
+workers are isolated by a per-run ROS~2 domain, and the publication step
+matches result folders by exact timestamp so that closely-named sweep
+variants are never conflated.
 
 %======================================================================
 \section{Integrated System Demonstration}
