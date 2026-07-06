@@ -394,10 +394,10 @@ is reported only within its own envelope.
     \toprule
     \textbf{Model (role)} & \textbf{Loop / excitation} & \textbf{Throttle} & \textbf{Bumpiness} & \textbf{Soil / $n$ coverage}\\
     \midrule
-    \texttt{rig\_rate} (rig tire baseline) & open-loop single-tire rig, scripted $\kappa/\alpha$ & --- (fixed rig) & --- & LHS around clay/dirt/sand\\
-    \texttt{vehicle\_rate} (deployed NMPC tire) & closed-loop NMPC, 4 paths & NMPC cruise, $[3,7]\,\mathrm{m/s}$ & $\{0,2,4\}$ & full Bekker--Mohr LHS box\\
-    \texttt{terrain\_window\_mlp} (window-MLP channel of deployed Fused-UKF) & closed-loop NMPC $+$ scripted open-loop & NMPC $+$ cruise-bias & $\{0,4\}$ & $n\in[0.40,1.30]$, 180 LHS cells\\
-    \texttt{vehicle\_fy} (NN-UKF tire, Sec.~\ref{sec:ukf}) & scripted sinusoidal steer, no controller & half const.\ OL / half PI-cruise & $0$ & widened $n\in[0.35,1.35]$\\
+    Rig-rate (tire baseline) & open-loop single-tire rig, scripted $\kappa/\alpha$ & --- (fixed rig) & --- & LHS around clay/dirt/sand\\
+    Vehicle-rate (deployed NMPC tire) & closed-loop NMPC, 4 paths & NMPC cruise, $[3,7]\,\mathrm{m/s}$ & $\{0,2,4\}$ & full Bekker--Mohr LHS box\\
+    Window-MLP (proprioceptive channel of deployed Fused-UKF) & closed-loop NMPC $+$ scripted open-loop & NMPC $+$ cruise-bias & $\{0,4\}$ & $n\in[0.40,1.30]$, 180 LHS cells\\
+    NN-UKF tire surrogate (Sec.~\ref{sec:ukf}) & scripted sinusoidal steer, no controller & half const.\ OL / half PI-cruise & $0$ & widened $n\in[0.35,1.35]$\\
     \bottomrule
   \end{tabularx}
 \end{table*}
@@ -428,9 +428,8 @@ Table~\ref{tab:tires_static} reports the mean and standard deviation
 of root-mean-square crosstrack error (RMS CTE), speed retention
 ratio, and solver wall time across the matrix. The neural row is the
 deployed whole-vehicle surrogate; the rig-trained checkpoints are
-retained in the benchmark suite as explicit \texttt{rig\_static} and
-\texttt{rig\_rate} baselines for reproducing the rig-to-vehicle
-comparison. Fig.~\ref{fig:tires_static_heatmap} breaks the same matrix
+retained in the benchmark suite as rig-static and rig-rate baselines for
+reproducing the rig-to-vehicle comparison. Fig.~\ref{fig:tires_static_heatmap} breaks the same matrix
 out per (terrain, path), which makes the analytical-baseline failure
 mode at dirt/sinusoidal and dirt/right-left visible at a glance.
 
@@ -529,9 +528,9 @@ shows the full distribution.
     Values are \emph{median} RMS CTE: the per-variant distributions are
     strongly right-skewed by a few high-error dirt scenarios
     (Fig.~\ref{fig:tires_estimator_heatmap}), so the median is the
-    representative statistic. The \texttt{static} neural row is
+    representative statistic. The static neural row is
     conditioned on the matched terrain preset (near-oracle); the
-    \texttt{+estimator} row runs the deployed force+proprioceptive
+    $+$estimator row runs the deployed force+proprioceptive
     Fused-UKF (Sec.~\ref{sec:ukf}) online. Per terrain the estimator
     matches the oracle on dirt and sand (median gap $\le\!1\,\mathrm{cm}$)
     and retains a residual gap only on clay (median $0.40$ vs.\
@@ -1485,10 +1484,10 @@ firm-soil refinement.
 
 The planner adds a smooth softplus barrier to the stage and terminal
 costs for each known obstacle. Downstream of the planner and human
-command source, the \texttt{SAFETY\_FILTERS} registry exposes a
-common \texttt{filter} interface: the filter receives the desired
-steering, throttle, brake, the current state, and the nearby
-obstacles, and returns the filtered command plus diagnostics. The
+command source, the safety-filter registry exposes a common filter
+interface: the filter receives the desired steering, throttle, brake, the
+current state, and the nearby obstacles, and returns the filtered command
+plus diagnostics. The
 DOB-CBF variant solves a single-step minimum-deviation QP around the
 incoming command --- a minimally-invasive control-barrier-function
 filter~\cite{Ames19} in the shared-control tradition of predictive and
