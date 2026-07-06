@@ -53,39 +53,32 @@
 \begin{abstract}
 We present a modular, latency-aware framework for shared and autonomous
 control of ground vehicles on deformable Soil Contact Model (SCM)
-terrain. The central problem is integration: terrain adaptation,
-command screening, latency compensation, and advisory warning must
-operate on the same plant, message stream, and timing assumptions if
-their cross-layer effects are to be measured. The software is
-structured around six explicit extension points --- command source,
-safety filter, collision warning, tire model, terrain estimator, and
-latency profile --- declared through Python \texttt{Protocol}
-interfaces and selected by the runtime factories used by the benchmark
-harness. A differentiable neural tire surrogate is embedded in an
-\emph{acados} nonlinear MPC (NMPC), a force/proprioceptive terrain
-estimator re-conditions the surrogate online from inertial and
-wheel-speed signals, and an asymmetric throttle disturbance observer
-reduces the residual soft-soil speed deficit. A two-layer
-obstacle-avoidance stack pairs in-horizon NMPC softplus barriers with a
-swappable downstream safety filter; the default filter is an
-intent-preserving DOB-CBF, a minimum-deviation screen suited to human
-teleoperation. In parallel, a terrain- and latency-aware forward
-collision warning re-uses the same tire surrogate to derive a
-soil-conditioned braking budget and advise the operator without
-overriding commands. Chrono::Vehicle inside Chrono::HIL provides the
-plant, and a synthetic 5G latency trace --- from a sequence model fit to a
-public 5G uplink dataset and mapped through a queue-load delay model ---
-drives the configurable command and camera delays. Repeatable simulation
-experiments show that the terrain-aware neural stack reduces median RMS
-crosstrack error by $39$--$41\,\%$ relative to SCM-calibrated Pacejka and
-TMeasy baselines in the live-estimator regime --- a gain concentrated in
-off-nominal (dirt, higher-speed) cells where the fixed analytical models lose
-grip, with medians otherwise comparable --- the disturbance observer increases
-achieved speed with a small tracking penalty, the DOB-CBF filter reduces
-collisions under the synthetic 5G profile, a deterministic counterfactual
-replay attributes $36$ of $45$ averted collisions to the filter under
-scripted worst-case drive-into-hazard commands, and the warning reproduces
-Chrono brake-stop distances to within $0.17\,\mathrm{m}$ mean absolute error.
+terrain. Terrain adaptation, command screening, latency compensation,
+and advisory warning run on a single plant and message stream, so their
+cross-layer effects can be measured together rather than in isolation.
+The framework exposes six extension points --- command source, safety
+filter, collision warning, tire model, terrain estimator, and latency
+profile. A differentiable neural tire model is embedded in an
+\emph{acados} nonlinear MPC (NMPC); an online force/proprioceptive
+estimator re-conditions it from inertial and wheel-speed signals; and an
+asymmetric throttle disturbance observer reduces the residual soft-soil
+speed deficit. Obstacle avoidance is a two-layer stack --- in-horizon
+NMPC barriers backed by a swappable downstream safety filter, whose
+default instance is an intent-preserving, minimum-deviation DOB-CBF
+suited to human teleoperation. A terrain- and latency-aware forward
+collision warning reuses the same tire model for a soil-conditioned
+braking budget, advising the operator without overriding commands. The
+plant is Chrono::Vehicle within Chrono::HIL, driven by a synthetic 5G
+latency trace on the command and camera channels. In repeatable
+simulation experiments the terrain-aware neural stack reduces median RMS
+crosstrack error by $39$--$41\,\%$ against SCM-calibrated Pacejka and
+TMeasy baselines, concentrated in the off-nominal cells where fixed
+analytical models lose grip; the disturbance observer raises achieved
+speed at a small tracking cost; and the DOB-CBF filter reduces collisions
+under the 5G profile, with a deterministic counterfactual replay
+attributing $36$ of $45$ averted collisions to it under scripted
+worst-case commands. The forward collision warning reproduces Chrono
+brake-stop distances to within $0.17\,\mathrm{m}$ mean absolute error.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -120,8 +113,7 @@ latency-aware forward collision warning that re-uses the same tire
 surrogate to provide an advisory channel when an override-style filter
 is undesirable. All four layers share the same Chrono::Vehicle plant
 inside Chrono::HIL, the same ROS~2 / Chrono::ROS messaging substrate, and
-the same benchmarking harness, so the main ablations are comparable within
-one controlled experimental matrix.
+the same benchmarking harness, so the main comparisons run on one matrix.
 
 Concretely, this integration paper contributes:
 \begin{enumerate}
@@ -191,16 +183,14 @@ Concretely, this integration paper contributes:
         statistical full-stack claim; see Section~\ref{sec:integrated}).
 \end{enumerate}
 
-Several of these components individually extend prior work
-incrementally. The contribution of this paper is their \emph{integration}
-and head-to-head evaluation on one deformable-terrain plant, one
-messaging substrate, and one benchmarking harness --- which is what
-exposes the cross-layer interactions that isolated studies cannot, such
-as the safety filter re-using the controller's tire surrogate for its
-traction-budget rollouts and the collision warning re-using the same
-soil-conditioned braking budget. Terrain adaptation and
-delay-compensated safety have previously been studied separately; here
-they are measured together on the same matrix.
+The contribution is the \emph{integration}: these layers are evaluated
+head-to-head on one deformable-terrain plant, one message stream, and one
+benchmarking harness, which exposes cross-layer interactions that isolated
+studies cannot --- the safety filter re-using the controller's tire
+surrogate for its traction-budget rollouts, and the collision warning
+re-using the same soil-conditioned braking budget. Terrain adaptation and
+delay-compensated safety are typically studied separately; here they are
+measured together on one matrix.
 
 %======================================================================
 \section{System Architecture}
@@ -280,19 +270,15 @@ well under an hour.
 
 The split between process-boundary contracts (ROS~2 topics) and
 in-process Protocol contracts is deliberate. Any ROS~2 node that
-subscribes to the vehicle-state message and publishes the
-control command can replace the acados NMPC without
-modifying the simulator; this is how the tire-model variants of
-\S\ref{sec:tires} are evaluated. Human teleoperation is reduced to
-the same normalised steering, throttle, and brake command channels
-before actuation, so the safety layer screens either autonomous or
-human commands behind one contract. Safety filters and the forward
-collision warning live behind their own Protocols, are resolved by
-name through their registries, and never share state --- the warning
-attaches to the same vehicle-state stream but never writes to the
-command path, so it composes with any selected filter (including the
-no-filter case) without re-plumbing. This is what makes the suite a
-framework rather than a single monolithic controller demonstration.
+subscribes to the vehicle-state message and publishes the control
+command can replace the acados NMPC without touching the simulator,
+which is how the tire-model variants of \S\ref{sec:tires} are
+evaluated. Human teleoperation reduces to the same normalised steering,
+throttle, and brake channels before actuation, so the safety layer
+screens autonomous and human commands behind one contract. The forward
+collision warning reads the same vehicle-state stream but never writes
+to the command path, so it composes with any filter --- including the
+no-filter case --- without re-plumbing.
 
 %======================================================================
 \section{Differentiable SCM Tire Surrogate}
@@ -317,70 +303,58 @@ against a transient failure mode rather than a bulk accuracy gain. All
 three export as CasADi expressions through which the acados solver
 auto-differentiates at every horizon stage.
 
-Two surrogate \emph{generations} are kept distinct, and the
-distinction recurs throughout the paper. The \emph{tire-rig surrogate}
+The paper uses two distinct surrogates. The \emph{tire-rig surrogate}
 is trained from controlled single-tire SCM sweeps --- one tire on a
 virtual test rig, stepped over a grid of
 $(\kappa,\alpha,F_z,\boldsymbol{\theta}_{\mathrm{soil}})$ with the
 exact SCM force logged at each operating point (the reproducible
 protocol of~\cite{Dallas21}). The \emph{whole-vehicle surrogate} is
 trained from closed-loop Chrono::Vehicle HMMWV runs that log each
-tire's live operating point alongside the SCM ground-truth force, so
-it captures the coupled regimes a driven vehicle actually reaches ---
+tire's live operating point alongside the SCM ground-truth force,
+capturing the coupled regimes a driven vehicle actually reaches ---
 load transfer, yaw, and the body-frame force conventions the isolated
-rig never produces. The rig generation tests whether the single-tire
-learning problem is solved in isolation; the whole-vehicle generation
-(deployed for the main NMPC and safety-filter results) tests whether
-the controller sees accurate forces in the regimes it actually drives
-through.
+rig never produces. The rig surrogate tests whether the single-tire
+learning problem is solvable in isolation; the whole-vehicle surrogate,
+deployed for the main NMPC and safety-filter results, tests whether the
+controller sees accurate forces in the regimes it drives through.
 
-\subsection{Training data: from rig sweeps to closed-loop rollouts}
+\subsection{Training data: rig sweeps and closed-loop rollouts}
 \label{sec:tires_rig_to_cl}
 \label{sec:training_data}
 
-The training-data pipeline followed two generations. The first
-generation, mirroring the rig protocol of \cite{Dallas21}, drove a
-single SCM tire over a Cartesian grid of $(\kappa, \alpha, F_z,
-\boldsymbol{\theta}_{\mathrm{soil}})$ and recorded the SCM
-ground-truth force at every queried operating point. Rig training is
-appealing because every label is exact, no closed-loop feedback
-confounds the supervision, and the data collection parallelises
-trivially. It produced surrogates with rig-grid coefficient of
-determination R$^2 \gtrsim 0.95$ on a held-out rig split, and it is
-therefore retained as the controlled baseline. The second generation
-targets the controller's deployed operating distribution: rather than
-sampling an open-loop tire grid, it collects training tuples from the
-closed-loop stack itself so the labels include the high-yaw-rate,
-lateral-acceleration, and body-frame force conventions that arise
-during aggressive references on deformable soil.
+The rig surrogate mirrors the protocol of~\cite{Dallas21}: a single SCM
+tire is driven over a Cartesian grid of $(\kappa, \alpha, F_z,
+\boldsymbol{\theta}_{\mathrm{soil}})$ and the SCM ground-truth force is
+recorded at every operating point. Every label is exact, no closed-loop
+feedback confounds the supervision, and the collection parallelises
+trivially; the result reaches rig-grid $R^2 \gtrsim 0.95$ on a held-out
+rig split and serves as the controlled baseline.
 
-For the closed-loop generation, a parallel pool
-of randomised $(\text{terrain}, \text{path}, \text{speed},
-\text{bumpiness}, \text{seed})$ scenarios runs the NMPC against
-Chrono::Vehicle and logs the live operating point alongside the SCM
-ground-truth force. The deployed whole-vehicle surrogate
-\texttt{vehicle\_rate\_64\_32\_lhs} is trained on
-\textbf{800 such scenarios}, LHS-sampled jointly over the soil
-parameters in \texttt{TRAINING\_RANGES\_V6} (Bekker--Mohr box around
-clay/dirt/sand) and the maneuver axes --- 264 sand, 270 dirt, 266 clay;
-214 sinusoidal, 201 right-left, 200 lane-change, 185
-double-lane-change; commanded speeds randomised in
-$[3,7]\,\mathrm{m/s}$; bumpiness and rock-count randomised; each
-scenario simulated for $\sim$10\,s at the controller rate. The
-aggregated training table contains approximately $1.85\,\mathrm{M}$ rows of
-$(\kappa,\alpha,F_z,u,\dot\delta)\!\to\!(F_x,F_y)$ tuples (front +
-rear axle per tick) --- fewer samples than the rig's $\sim$100k
-single-tire grid but drawn from the operating-point distribution the
-deployed MPC actually visits.
-The resulting distribution is matched to the
-regime the planner actually visits, and the body-frame convention is
-enforced at the collection step rather than at the import step. The
-three checkpoints used throughout this
-paper's pilot sweeps are all closed-loop trained; two rig-trained
-checkpoints from the first generation are retained as a baseline so
-the rig-versus-closed-loop comparison remains reproducible
-(Sec.~\ref{sec:tires_static} selects them as the \texttt{rig\_static}
-and \texttt{rig\_rate} model identifiers).
+The whole-vehicle surrogate instead targets the controller's deployed
+operating distribution, collecting training tuples from the closed-loop
+stack itself so the labels carry the high-yaw-rate,
+lateral-acceleration, and body-frame force conventions that arise under
+aggressive references on deformable soil. A parallel pool of randomised
+$(\text{terrain}, \text{path}, \text{speed}, \text{bumpiness},
+\text{seed})$ scenarios runs the NMPC against Chrono::Vehicle and logs
+the live operating point alongside the SCM force. The deployed surrogate
+is trained on \textbf{800 such scenarios}, with the six soil parameters
+LHS-sampled jointly over a broad Bekker--Mohr box that \emph{encloses}
+the clay, dirt, and sand presets as interior points --- so accuracy on
+those terrains is interpolation, not memorisation, and generalisation is
+measured on held-out LHS slices and off-manifold soils
+(Sec.~\ref{sec:tires_rig_vs_vehicle}) --- together with the maneuver
+axes: 264 sand, 270 dirt, 266 clay; 214 sinusoidal, 201 right-left, 200
+lane-change, 185 double-lane-change; commanded speeds in
+$[3,7]\,\mathrm{m/s}$; bumpiness and rock-count randomised; each scenario
+$\sim$10\,s at the controller rate. The aggregated table holds
+$\approx 1.85\,\mathrm{M}$ rows of
+$(\kappa,\alpha,F_z,u,\dot\delta)\!\to\!(F_x,F_y)$ (front $+$ rear axle
+per tick) --- fewer than the rig's $\sim$100k single-tire grid, but drawn
+from the distribution the deployed MPC actually visits. Two rig-trained
+checkpoints are retained as reproducible rig-static and rig-rate
+baselines for the rig-versus-vehicle comparison
+(Sec.~\ref{sec:tires_static}).
 
 The NMPC queries the surrogate at each stage. The longitudinal
 traction budget $F_x^{\mathrm{trac}}$ is evaluated at reference slip
@@ -389,26 +363,22 @@ $u$, and $\boldsymbol{\theta}_{\mathrm{soil}}$ taken from terrain
 presets or the online estimator. Cornering forces $F_y$ use the live
 operating point $(\kappa, \alpha, F_z, u)$ at each stage.
 
-The two \emph{learned terrain estimators} are trained on deliberately
-different data, and the distinction matters for reading their results.
-The sliding-window MLP (\texttt{terrain\_window\_mlp},
-Sec.~\ref{sec:estimator}) --- the proprioceptive channel of the deployed
-Fused-UKF (Sec.~\ref{sec:ukf}) --- regresses the Bekker exponent $n$ from a
-4\,s window of proprioceptive statistics; it is trained on 180 LHS soil
-cells $\times$ 20 scenarios, split between closed-loop NMPC tracking
-(sinusoidal / lane-change / right-left at $\{4,6,8\}\,\mathrm{m/s}$) and
-scripted open-loop cruise-bias runs, at bumpiness $\in\{0,4\}$ only ---
-the envelope that bounds its in-distribution claims
-(Table~\ref{tab:training_data}). The NN-UKF tire surrogate
-(\texttt{vehicle\_fy}, Sec.~\ref{sec:ukf}) is instead trained on 300
-\emph{scripted} sinusoidal-steer runs with no controller in the loop,
-half at constant open-loop throttle and half under a PI cruise loop,
-over a widened soil box so the canonical presets are interior points.
-The throttle convention thus differs across models --- the deployed
-surrogates see NMPC cruise throttle, the rig surrogate sees none
-(fixed rig), and the UKF surrogate sees a mix of constant-open-loop and
-PI-cruise throttle --- so each model's accuracy is reported only within
-its own excitation envelope.
+The two learned terrain estimators are trained on deliberately
+different data, which matters for reading their results. The
+sliding-window MLP (Sec.~\ref{sec:estimator}) --- the proprioceptive
+channel of the deployed Fused-UKF (Sec.~\ref{sec:ukf}) --- regresses the
+Bekker exponent $n$ from a 4\,s window of proprioceptive statistics; it
+is trained on 180 LHS soil cells $\times$ 20 scenarios, split between
+closed-loop NMPC tracking (sinusoidal / lane-change / right-left at
+$\{4,6,8\}\,\mathrm{m/s}$) and scripted open-loop cruise-bias runs, at
+bumpiness $\in\{0,4\}$ (the envelope that bounds its in-distribution
+claims, Table~\ref{tab:training_data}). The NN-UKF tire surrogate
+(Sec.~\ref{sec:ukf}) is trained on 300 scripted sinusoidal-steer runs
+with no controller in the loop, half at constant open-loop throttle and
+half under a PI cruise loop, over a widened soil box that makes the
+canonical presets interior points. Each model therefore sees a different
+throttle excitation --- NMPC cruise, none, or a mix --- so its accuracy
+is reported only within its own envelope.
 
 \begin{table*}[!t]
   \renewcommand{\arraystretch}{1.15}
@@ -534,25 +504,22 @@ numbers are not directly comparable to Table~\ref{tab:tires_static}'s
 mean$\pm$std over the 1215-run static matrix; the two report the
 static-prior and live-estimator regimes respectively.
 
-Two points are needed to read Table~\ref{tab:tires_estimator}
-honestly. First, the \texttt{static} neural row is conditioned on the
-matched terrain preset and therefore behaves as a near-oracle
-reference, whereas the \texttt{+estimator} row must recover the soil
+Two points frame Table~\ref{tab:tires_estimator}. First, the static
+neural row is conditioned on the matched terrain preset and behaves as a
+near-oracle reference, whereas the $+$estimator row recovers the soil
 parameters online from inertial and wheel-speed signals alone. The
-estimator variant nearly matches that near-oracle row
-(median $0.177$ vs.\ $0.174\,\mathrm{m}$, a $3\,\mathrm{mm}$ gap whose
-$95\,\%$ bootstrap confidence intervals, $[0.150,0.191]$ and
-$[0.142,0.191]\,\mathrm{m}$, overlap --- statistically indistinguishable)
-while requiring no prior terrain knowledge, and both NN rows reduce
-median RMS CTE by $39$--$41\,\%$ relative to the SCM-calibrated Pacejka
-and TMeasy baselines. The deployable claim is therefore that the
-estimator recovers most of the oracle-prior benefit without that prior,
-not that it improves on a correct prior. Second, the per-row distributions are
-strongly right-skewed by a few high-error scenarios (mostly
-Pacejka and TMeasy on dirt at $v_{\mathrm{ref}}\!=\!7\,\mathrm{m/s}$,
-where the analytical baselines collide with the curvature limit);
-Fig.~\ref{fig:tires_estimator_heatmap} shows the full distribution per
-variant so the median and tail behaviour are both visible.
+estimator variant nearly matches that near-oracle row (median $0.177$
+vs.\ $0.174\,\mathrm{m}$; the $95\,\%$ bootstrap intervals,
+$[0.150,0.191]$ and $[0.142,0.191]\,\mathrm{m}$, overlap) with no prior
+terrain knowledge, and both NN rows reduce median RMS CTE by
+$39$--$41\,\%$ against the SCM-calibrated Pacejka and TMeasy baselines.
+The deployable claim is thus that the estimator recovers most of the
+oracle-prior benefit without the prior, not that it beats a correct
+prior. Second, the per-row distributions are right-skewed by a few
+high-error scenarios (mostly Pacejka and TMeasy on dirt at
+$v_{\mathrm{ref}}\!=\!7\,\mathrm{m/s}$, where the analytical baselines
+collide with the curvature limit); Fig.~\ref{fig:tires_estimator_heatmap}
+shows the full distribution.
 
 \begin{table}[!t]
   \renewcommand{\arraystretch}{1.15}
@@ -659,8 +626,7 @@ retrain:
 \item three whole-vehicle checkpoints (matched architectures) on a
   fresh 800-scenario closed-loop dataset that LHS-samples
   $\boldsymbol\theta_{\mathrm{soil}}$ across the same Bekker--Mohr box
-  the rig uses (\texttt{TRAINING\_RANGES\_V6}; no canonical-preset
-  jitter).
+  the rig uses (no canonical-preset jitter).
 \end{itemize}
 
 Offline force prediction on a held-out LHS test slice exposes a
@@ -691,7 +657,7 @@ rig-trained advantage narrows substantially
 Per-tick force-prediction smoothness explains the shrinking gap:
 aggregated over the 432 runs, the LHS-trained vehicle surrogates have
 $\mathrm{std}(\dot F_y^{\mathrm{pred}})$ around $16$-$20$~kN/s, much
-closer to the rig surrogates' $14$~kN/s (the $32$-$16$ rig\_rate
+closer to the rig surrogates' $14$~kN/s (the $32$-$16$ rig-rate
 variant) than the canonical-jitter-trained vehicle MLPs' $40$~kN/s. Wider
 training-terrain coverage acts as an effective low-pass on the
 closed-loop SCM signal in the same way LHS-independent sampling did
