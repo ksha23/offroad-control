@@ -96,7 +96,7 @@ def manifold_soil_from_n(n_val: float) -> "SoilParams":
     global _MANIFOLD_PRESETS
     if _MANIFOLD_PRESETS is None:
         import sys
-        sim_dir = Path(__file__).resolve().parents[1] / "simulation"
+        sim_dir = Path(__file__).resolve().parents[2] / "simulation"
         if str(sim_dir) not in sys.path:
             sys.path.insert(0, str(sim_dir))
         from param_consistency import TERRAIN_PRESETS
@@ -751,7 +751,7 @@ def run_scenario(sc: Scenario,
 
 
 def main():
-    out_dir = Path(__file__).resolve().parents[1] / "my_paper" / "paper_figures"
+    out_dir = Path(__file__).resolve().parents[2] / "my_paper" / "paper_figures"
     out_dir.mkdir(parents=True, exist_ok=True)
     out_png = out_dir / "ukf_validation.png"
 
@@ -828,7 +828,7 @@ def _load_nn_tire(model_dir: str, terrain_params: dict):
     if model_dir in _NN_TIRE_CACHE:
         return _NN_TIRE_CACHE[model_dir]
     import sys
-    sim_dir = Path(__file__).resolve().parents[1] / "simulation"
+    sim_dir = Path(__file__).resolve().parents[2] / "simulation"
     sys.path.insert(0, str(sim_dir))
     from nn_tire_model import load_nn_tire_model
     mdl = load_nn_tire_model(model_dir, terrain_params)
@@ -1082,7 +1082,7 @@ def run_dallas(sc: DallasScenario,
 # directly to (Fy_total, M_yaw_total) — what the full HMMWV vehicle
 # actually produces, with the rig-to-vehicle gap absorbed into the
 # weights rather than a separate calibration scalar.
-_VEH_FY_DIR = Path(__file__).resolve().parents[1] / "nn_models" / "vehicle_fy_64_32"
+_VEH_FY_DIR = Path(__file__).resolve().parents[2] / "nn_models" / "vehicle_fy_64_32"
 _VEH_FY_CACHE: Dict[str, Any] = {}
 
 
@@ -1666,8 +1666,8 @@ def main_dallas_scm():
     them with ``data_collection/run_dallas_scm.py``). Writes the figure
     to ``my_paper/paper_figures/ukf_dallas_validation_scm.png``.
     """
-    log_dir = Path(__file__).resolve().parents[1] / "data" / "dallas_scm"
-    out_dir = Path(__file__).resolve().parents[1] / "my_paper" / "paper_figures"
+    log_dir = Path(__file__).resolve().parents[2] / "data" / "dallas_scm"
+    out_dir = Path(__file__).resolve().parents[2] / "my_paper" / "paper_figures"
     out_dir.mkdir(parents=True, exist_ok=True)
     out_png = out_dir / "ukf_dallas_validation_scm.png"
 
@@ -1714,7 +1714,7 @@ def main_dallas_scm():
 
 
 def main_dallas():
-    out_dir = Path(__file__).resolve().parents[1] / "my_paper" / "paper_figures"
+    out_dir = Path(__file__).resolve().parents[2] / "my_paper" / "paper_figures"
     out_dir.mkdir(parents=True, exist_ok=True)
     out_png = out_dir / "ukf_dallas_validation.png"
 

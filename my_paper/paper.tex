@@ -2213,9 +2213,9 @@ terrain estimator, the g--g speed planner, the throttle DOB, the DOB-CBF safety
 filter, and the forward collision warning all active simultaneously. The online
 estimate $\hat n$ adapts across the soil boundary (top); the achieved speed
 tracks the grip-limited g--g reference with the DOB closing the soft-soil gap
-(middle); and the safety filter holds the ego clear of the hazards throughout
-(minimum clearance $0.42\,$m, $162$ binding-constraint avoidance steps) with
-\emph{zero collisions} over the $129\,$m traverse (bottom). Running the full
+(middle); and the safety filter keeps the traverse \emph{collision-free}
+(closest pass $0.02\,$m at the tightest rock, $111$ binding-constraint
+avoidance steps) over the $148\,$m mission (bottom). Running the full
 stack is itself an integration test: it exercises the cross-layer interfaces
 that per-component evaluation does not --- here the estimator's live-terrain
 update re-conditions the safety filter's grip-limited braking authority, the
