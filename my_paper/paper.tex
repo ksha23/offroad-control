@@ -1996,7 +1996,23 @@ independent forward collision warning component that runs in parallel
 with the rest of the stack and emits a discrete severity signal
 $\{\textsc{green}, \textsc{yellow}, \textsc{orange}, \textsc{red}\}$
 on every controller tick, escalating as the vehicle closes on a hazard
-(Fig.~\ref{fig:cw_timeline}).
+(Fig.~\ref{fig:warning_ui}). The signal drives the operator's heads-up
+overlay --- a severity banner, the current clearance against the required
+stopping distance, and the live terrain-conditioned brake budget;
+Fig.~\ref{fig:cw_timeline} traces the escalation over a full approach.
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=\columnwidth]{warning_ui.png}
+  \caption{The operator's forward-collision-warning overlay at three moments of
+    a straight-in approach on soft clay under a $150\,\mathrm{ms}$ link,
+    escalating \textsc{green}$\to$\textsc{orange}$\to$\textsc{red}. The severity
+    ladder, time-to-collision, clearance-versus-required-stop bar, and the
+    terrain-conditioned brake budget $a_b(\hat n)$ are the live outputs of the
+    deployed warning system (not a mock-up); \textsc{red} fires once the margin
+    (clearance $-$ required stopping distance) crosses zero.}
+  \label{fig:warning_ui}
+\end{figure}
 
 The warning module is exposed through a small factory in line with
 the rest of the swappable safety layer, so the warning strategy can
@@ -2153,11 +2169,22 @@ operator-reaction budget.
 A single invocation of the suite's top-level driver executes all of
 the autonomous sub-sweeps that produce the non-HIL results reported
 in this paper, then merges the resulting figures and CSVs into the
-publication set. The paper tier completes
-over ten thousand Chrono closed-loop trials on a single
-24-core workstation; the human-in-the-loop protocol of
-Sec.~\ref{sec:safety_hil} is run separately because it requires an
-operator at the wheel.
+publication set. The paper tier completes $25$ experiments and
+$\approx\!11{,}900$ Chrono closed-loop trials on a single
+24-core workstation (Fig.~\ref{fig:benchmark_suite}); the
+human-in-the-loop protocol of Sec.~\ref{sec:safety_hil} is run separately
+because it requires an operator at the wheel.
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=\columnwidth]{benchmark_suite.png}
+  \caption{Coverage of the open-source benchmarking suite: every closed-loop
+    experiment run by \texttt{run.py -{}-tier paper}, coloured by the paper theme
+    it backs, with its Chrono-trial count. One command reproduces $25$
+    experiments and $\approx\!11{,}900$ trials; the counts are read directly from
+    the suite's own run manifest.}
+  \label{fig:benchmark_suite}
+\end{figure}
 
 Reproducibility is enforced through a few architectural
 choices in the suite itself. Sensor noise is enabled in every trial

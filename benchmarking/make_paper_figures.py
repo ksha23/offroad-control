@@ -88,6 +88,10 @@ STEPS = [
                                  [PY, "-u", str(HERE / "make_fig_cw_brake_validation.py")]),
     ("cw_timeline + cw_lead_vs_terrain (Fig 20/21)",
                                  [PY, "-u", str(HERE / "make_fig_collision_warning.py")]),
+    ("warning_ui (Sec IX: operator warning overlay, from the live system)",
+                                 [PY, "-u", str(HERE / "make_fig_warning_ui.py")]),
+    ("benchmark_suite (Sec X: suite coverage, from run.py --dry-run)",
+                                 [PY, "-u", str(HERE / "make_fig_benchmark_suite.py")]),
     ("fig1_force_4way (Fig 5)",  [PY, "-u", str(HERE / "make_fig1_4way.py")]),
     ("rollout_prediction_validation (predicted-horizon fan vs plant; reads the "
      "run.py rollout_diag LOG_MPC_PREDICTIONS sweep)",
