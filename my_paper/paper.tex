@@ -703,14 +703,14 @@ for the rig.
   \label{fig:rig_vs_vehicle_paired}
 \end{figure}
 
-\paragraph{Force-RMSE vs control-RMS-CTE picture is not the same metric.}
+\paragraph{Force accuracy and closed-loop tracking are different metrics}
 The CTE numbers in Table~\ref{tab:tires_rig_vs_vehicle} are within
-1\,cm of each other across the four mid-size variants. To unpack what
-each surrogate is doing during those runs, we replay all
-four surrogates on twelve logged trajectories (one of which is shown
-in Fig.~\ref{fig:rig_vs_vehicle_4way}), computing per-tick front-axle
-$|\Delta F_y|$ against the Chrono ground truth without re-running the
-simulator. Mean RMSE across the twelve scenarios:
+1\,cm of each other across the four mid-size variants. To see what
+each surrogate is doing during those runs, we replay all four on twelve
+logged trajectories (one shown in Fig.~\ref{fig:rig_vs_vehicle_4way}),
+computing per-tick front-axle $|\Delta F_y|$ against the Chrono ground
+truth without re-running the simulator. Mean RMSE across the twelve
+scenarios:
 
 \begin{center}\footnotesize
 \setlength{\tabcolsep}{4pt}
@@ -724,29 +724,22 @@ Ensemble (0.4 rig + 0.6 vehicle, rate)        & $637$ \\
 \end{tabular}
 \end{center}
 
-The deployed vehicle rate surrogate is the
-\emph{worst} of the four on this force-RMSE metric, yet it is also
-the most reliable on closed-loop tracking. A six-scenario CTE
-comparison driving the standard MPC with each surrogate
-shows the static and rate vehicle surrogates within 5\,cm of each
-other on five of six scenarios --- and a single catastrophic failure
-on clay/right-left at $v_{\mathrm{ref}}=7\,\mathrm{m/s}$ where
-the static surrogate degrades to $1.07\,\mathrm{m}$ RMS CTE while
-the rate surrogate stays at $0.16\,\mathrm{m}$. The mean RMS CTE
-across the six scenarios is therefore $0.18\,\mathrm{m}$ for the
-rate variant and $0.33\,\mathrm{m}$ for the static variant; excluding
-the catastrophic case they match at $0.185\,\mathrm{m}$.  The
-rate-augmented variants trade their force-RMSE deficit for a
-lower-bandwidth, lower-amplitude $F_y$ trace whose under-prediction at
-transient peaks (the controller that collected the LHS data planned
-conservatively, so the training distribution underweights
-extreme-slip excursions) is compensated by a smoother MPC control
-output and an absence of the catastrophic failure mode the static
-checkpoint exhibits. A simple $w=0.4$ rig-plus-vehicle ensemble
-cancels the opposing biases at zero deployment cost (RMSE drops to
-637\,N, a 5\,\% improvement over vehicle alone), and is the
-recommended default for downstream force-prediction consumers such
-as the safety filter and the collision-warning braking budget.
+The deployed vehicle-rate surrogate is the \emph{worst} of the four on
+force-RMSE, yet the most reliable in closed loop. Driving the standard
+MPC with each surrogate over six scenarios, the static and rate vehicle
+surrogates stay within $5\,\mathrm{cm}$ on five of six, but the static
+surrogate suffers a catastrophic failure on clay/right-left at
+$v_{\mathrm{ref}}=7\,\mathrm{m/s}$ ($1.07\,\mathrm{m}$ RMS CTE against
+the rate variant's $0.16\,\mathrm{m}$); mean CTE is $0.18\,\mathrm{m}$
+(rate) versus $0.33\,\mathrm{m}$ (static), matching at
+$0.185\,\mathrm{m}$ once that case is excluded. The rate variant's
+smoother, lower-amplitude $F_y$ trace under-predicts transient peaks but
+avoids the static checkpoint's failure mode, which is why it is deployed
+despite the higher force-RMSE. A $w=0.4$ rig-plus-vehicle ensemble
+cancels the opposing biases at zero deployment cost ($637\,\mathrm{N}$,
+$5\,\%$ better than vehicle alone) and is the recommended default for
+downstream consumers such as the safety filter and the
+collision-warning braking budget.
 
 \begin{figure}[!t]
   \centering
@@ -833,24 +826,19 @@ channel is already accurate.
 \subsection{Feature headroom and the structural force-prediction floor}
 \label{sec:feature_headroom}
 Section~\ref{sec:pred_validation} isolates $F_x$ as the dominant
-prediction error. We test directly whether that gap, and the companion
-rear-axle $F_y$ weakness, is closable with additional \emph{causal,
-MPC-available} input features. Holding the deployed per-axle surrogate
-architecture fixed ($64\!\times\!32$ tanh, scenario split, three seeds),
-we retrain it with progressively richer inputs --- body-frame lateral
-velocity $v$, yaw rate $\omega$, road-wheel angle $\delta$, a kinematic
+prediction error. Two prediction weaknesses remain to test: this
+longitudinal $F_x$ bias, and the rear-axle $F_y$, which the deployed
+surrogate predicts least accurately of the four force channels. We ask
+whether either is closable with additional \emph{causal, MPC-available}
+features. Holding the deployed per-axle architecture fixed
+($64\!\times\!32$ tanh, scenario split, three seeds), we retrain with
+progressively richer inputs --- body-frame lateral velocity $v$, yaw
+rate $\omega$, road-wheel angle $\delta$, a kinematic
 lateral-load-transfer estimate, and their first differences --- and
 report held-out RMSE per axle (Table~\ref{tab:feature_headroom}). The
-candidate set is deliberately confined to causal, MPC-available state.
-Wheel speed is \emph{not} added as a separate input because the slip
-ratio $\kappa\!=\!(\omega_w r - u)/u$ already encodes the
-wheel-versus-vehicle speed the tire force depends on; promoting wheel
-speed to a dynamic \emph{state} (rather than an input) is the
-wheelspeed-state reformulation of~\cite{Onozuka25}, out of scope here.
-Body accelerations $(a_x,a_y,a_z)$ are excluded on principle: by
-Newton's second law the body accelerations \emph{are} the net forces
-($a=\Sigma F/m$), so feeding any acceleration channel to a force
-predictor is label leakage rather than prediction.
+candidates are confined to causal state the MPC already carries; body
+accelerations are excluded, since $a=\Sigma F/m$ makes them the labels
+themselves.
 
 The response is strongly asymmetric. Front-axle lateral force improves by
 $14\%$ once the dynamic state and its rates are supplied: $F_{y,f}$
@@ -941,8 +929,12 @@ neutral dirt prior ($n\!=\!0.7$), accepts an estimator update about
 $4.2\,\mathrm{s}$ into a run, and maps the smoothed $\hat n$ onto
 $(K_\phi,K_c,c,\phi,k)$ by interpolation along the retained
 clay--dirt--sand terrain manifold. The controller and safety filter
-therefore receive a complete soil-parameter vector, but the live
-identified degree of freedom in this paper is $n$ only.
+therefore receive a complete soil-parameter vector, but only $n$ is
+identified online; the remaining five Bekker--Mohr parameters are
+reconstructed from $\hat n$ along the preset manifold. This
+parameter-known setting --- $n$ estimated, the rest assumed to track it
+along the manifold --- is used throughout the paper and revisited in the
+limitations (Sec.~\ref{sec:limitations}).
 
 \subsection{Closed-loop convergence}
 \label{sec:estimator_convergence}
@@ -959,7 +951,10 @@ terrains (the five non-$n$ soil parameters perturbed
 $\pm 30\text{--}50\,\%$ off the clay--dirt--sand interpolation
 manifold), each under closed-loop NMPC sinusoidal tracking at
 $v_{\mathrm{cmd}}\!\in\!\{5,7\}\,\mathrm{m/s}$, bumpiness $\in\{0,4\}$,
-five seeds ($60$ in-distribution and $120$ OOD runs).
+five seeds ($60$ in-distribution and $120$ OOD runs). This sweep
+stresses the non-$n$ soil axes; broad $n$-generalisation across the
+deployable range is quantified separately by the 100-soil manifold
+sweep (Sec.~\ref{sec:ukf}).
 
 Table~\ref{tab:estimator_pilot} summarises the tail-window error: the
 proprioceptive channel converges to mean $|\Delta n|=0.079$ (median
@@ -1049,11 +1044,11 @@ low-$n$ failure per se --- clay is estimated accurately
 ($|\Delta n|\!\approx\!0.09$) at bumpiness $\le 4$. It is a limitation
 of the window-MLP channel alone, not of the deployed Fused-UKF: its
 state-augmented force channel (Sec.~\ref{sec:ukf}) infers $n$ through a
-physics-based bicycle model and does not show this bumpiness sensitivity. Extending the
-estimator's training set to higher bumpiness, or gating the
+physics-based bicycle model and does not show this bumpiness sensitivity.
+Extending the training set to higher bumpiness, or gating the
 vertical-dynamics features on an online road-roughness estimate, would
-close the gap; we report the in-envelope result here and flag the
-extrapolation regime explicitly rather than averaging over it.
+close the gap and is left to future work; results here are reported
+within the trained envelope.
 
 \subsection{Closed-loop terrain estimation: force observability and a proprioceptive-fused UKF}
 \label{sec:estimator_ukf}
@@ -1092,15 +1087,12 @@ Dallas's 3-DOF model --- each wheel receives its own vertical load
 under quasi-static longitudinal and lateral transfer driven by measured
 $a_x$, $a_y$, the steering input, and the body-frame yaw rate.
 
-\paragraph{Whole-vehicle lateral-force surrogate.} Earlier iterations
-trained the UKF's NN on a single-tire rig (paper118 protocol) and
-wrapped it in a hand-tuned rig-to-vehicle gain
-($1.15\times$ on $F_y$) to close the $\approx 15\,\%$ gap between
-single-tire rig forces and full-suspension HMMWV forces. The
-calibration is acceptable at the two soft-soil presets paper118
-reports but does not generalise to a broad LHS sweep; the surrogate
-instead natively predicts what the *whole vehicle*
-produces:
+\paragraph{Whole-vehicle lateral-force surrogate.} The UKF's force
+channel predicts what the \emph{whole vehicle} produces directly, rather
+than scaling a single-tire rig force by a hand-tuned rig-to-vehicle gain.
+A rig-plus-gain calibration holds at the soft-soil presets but does not
+generalise across a broad LHS sweep, so the deployed surrogate is trained
+end-to-end on whole-vehicle forces:
 \[
   \resizebox{\columnwidth}{!}{$\displaystyle
   \mathrm{NN}_{F_y}\!:\, (u, v, \omega, \delta, K_\phi, K_c, n,
@@ -1118,7 +1110,7 @@ Crucially, the soil axes are sampled from a \emph{widened} box
 ($K_\phi$ from $0.3\,$MPa, cohesion from $300\,$Pa, Janosi shear
 $0.008\text{--}0.028\,$m, $n\in[0.35,1.35]$): the canonical clay,
 dirt and sand presets sit on the \emph{edges} of the deployed
-\texttt{TRAINING\_RANGES\_V6} box (clay's $K_\phi$ is at $5\,\%$ of
+training box (clay's $K_\phi$ is at $5\,\%$ of
 range and its Janosi shear at the $0\,\%$ floor), so a surrogate
 trained on that box has to extrapolate to reach them and fails on
 clay. Widening the box (never narrowing, so the uniform LHS coverage
@@ -1128,12 +1120,12 @@ Targets are extracted directly from each Chrono log:
 $F_{y,\mathrm{total}}\!=\!m\,a_y$ and
 $M_{\mathrm{yaw,total}}\!=\!I_z\,\dot\omega$ (5-point central
 difference). Held-out (30 of 300 scenarios, scenario-split) $R^2$ is
-$0.90$ on $F_y$ and $0.88$ on $M_{\mathrm{yaw}}$. The sampling
-discipline is strict: every input axis is uniformly sampled over its
-(widened) box, with no narrowing toward a canonical preset or
-controller-conditioned operating point, and the trained model is
-plugged into the UKF \emph{without} any per-soil scalar correction. This surrogate is the
-UKF's force channel for both the Fused-UKF and the force-only NN-UKF.
+$0.90$ on $F_y$ and $0.88$ on $M_{\mathrm{yaw}}$. Every input axis is
+uniformly sampled over the widened box, with no narrowing toward a
+canonical preset or controller-conditioned operating point, and the
+trained model enters the UKF with no per-soil scalar correction. This
+surrogate is the UKF's force channel for both the Fused-UKF and the
+force-only NN-UKF.
 
 \paragraph{Force observability of $n$ (the key issue).}
 The reason the force channel alone is not enough is an
@@ -1206,14 +1198,12 @@ collapse on firm sand ($\approx\!0.44\text{--}0.47$) for exactly the
 observability reason above, whereas the proprioceptive channel makes
 $n$ observable, so the Fused-UKF accurately recovers firm sand
 ($|\Delta n|\!=\!0.006$) and is the most accurate estimator overall
-($0.059$). We note one limitation plainly: the Fused-UKF is the
-\emph{least} accurate on canonical clay ($0.103$) --- both force-only
-UKFs and the MLP outperform it there, because the proprioceptive
-channel is slightly over-weighted on soft, on-manifold soil where the
-force channel is already reliable. The trade is nonetheless favourable:
-the deployed filter accepts a small clay penalty in exchange for
-eliminating the firm-sand failure exhibited by both force-only
-baselines.
+($0.059$). The Fused-UKF is \emph{least} accurate on canonical clay
+($0.103$), where both force-only UKFs and the MLP outperform it, because
+the proprioceptive channel is slightly over-weighted on soft, on-manifold
+soil where the force channel is already reliable. The trade is
+favourable: a small clay penalty in exchange for eliminating the
+firm-sand failure both force-only baselines exhibit.
 
 \begin{figure*}[!t]
   \centering
@@ -1361,10 +1351,7 @@ with a grip-safety margin that de-rates the surrogate's peak-force query
 to leave transient headroom. The curvature $\kappa(s)$ is read from the
 analytic arc-length spline of the path rather than finite-differenced
 over the horizon, whose node spacing varies with speed and otherwise
-produces spurious $\kappa$ spikes that collapse $v_{\mathrm{ref}}$. This
-is a third use of the differentiable surrogate, alongside in-horizon
-force prediction and the traction-budget constraint: the same model used
-for tracking also determines the cornering speed the soil can support.
+produces spurious $\kappa$ spikes that collapse $v_{\mathrm{ref}}$.
 
 A closed-loop A/B against the geometric reference (clay/dirt/sand
 $\times$ \{sinusoid, double lane change\} $\times\,\{5,7\}\,\mathrm{m/s}$,
@@ -1472,73 +1459,24 @@ runs per variant.
   \label{fig:throttledob}
 \end{figure*}
 
-\subsection{Why a reactive observer rather than a feedforward model}
+\subsection{Why a reactive observer, not a feedforward model}
 \label{sec:throttledob_ff}
-A natural alternative is to make the resistance \emph{feedforward}: the
-OCP already exposes a longitudinal residual ($\dot u = a_x +
-\mathrm{d}u_\mathrm{resid}$), so one can set
-$\mathrm{d}u_\mathrm{resid} = -c_\mathrm{drag}(\hat n)$ with
-$c_\mathrm{drag}$ calibrated from the DOB-off rollout drift and indexed
-by the live estimate $\hat n$. We implemented and calibrated this, and it
-clarifies why the reactive observer is the better choice. First, the
-prediction bias is \emph{not} a monotonic drag: only firm soil (dry
-sand) genuinely over-predicts speed
-($c_\mathrm{drag}\!\approx\!0.17\,\mathrm{m/s^2}$); on dirt the kinematic
-prediction \emph{under}-predicts and on clay it is accurate, so the
-calibrated feedforward is effectively sand-specific. Second, a
-head-to-head over clay/dirt/sand (Table~\ref{tab:ffdrag}) shows the
-feedforward term gives only a marginal gain on the calibrated firm
-sand (sand speed ratio $0.60\!\to\!0.64$), a small gain on clay
-($0.53\!\to\!0.54$), and a small gain on dirt ($0.82\!\to\!0.85$),
-but it \emph{cannot replace} the observer: the DOB
-is higher on every terrain (clay $0.70$ vs.\ $0.54$, sand $0.67$ vs.\ $0.64$) because
-clay's deficit is a traction limit, not a drag, which only integral
-feedback closes. Combining the two does not raise speed and inflates
-tracking error. A terrain-dependent, sign-varying bias is exactly the
-regime where an adaptive observer beats a fixed model, so the DOB is
-retained as the default and the feedforward term is left as an optional
+A feedforward alternative sets a calibrated longitudinal residual
+$\mathrm{d}u_\mathrm{resid} = -c_\mathrm{drag}(\hat n)$ from the DOB-off
+drift. It cannot replace the observer, because the prediction bias is not
+a monotonic drag but a \emph{sign-varying, terrain-dependent} effect:
+firm sand over-predicts speed
+($c_\mathrm{drag}\!\approx\!0.17\,\mathrm{m/s^2}$), dirt under-predicts,
+and clay is accurate --- and clay's deficit is a traction limit, not a
+drag, which only integral feedback closes. Across clay/dirt/sand the DOB
+beats the calibrated feedforward on speed ratio at every terrain (clay
+$0.70$ vs.\ $0.54$, dirt $0.88$ vs.\ $0.85$, sand $0.67$ vs.\ $0.64$);
+baking the converged offset in as a static bias likewise recovers part of
+the clay deficit but over-throttles dirt and inflates tracking error,
+since the required offset varies with instantaneous speed, curvature, and
+load transfer. The disturbance-rejection burden is genuinely adaptive, so
+the DOB is the default and a feedforward term is at most an optional
 firm-soil refinement.
-
-The same conclusion holds for a feedforward at the \emph{actuation map}
-itself, the most direct DOB replacement. The naive map
-$\tau=a_x/a_{x,\max}$ omits a terrain-dependent throttle offset; the
-integral DOB converges to exactly that offset, which is smooth in $\hat
-n$ (clay/dirt ${\approx}0.24$, sand ${\approx}0.07$). Baking the
-converged offset in as a static held bias $d_\mathrm{ff}(\hat n)$ and
-removing the integral (a 48-run clay/dirt/sand ablation) again fails to
-replace the observer: it recovers part of the clay deficit
-($2.98\!\to\!3.13$ vs.\ DOB $3.41\,$m/s) but \emph{over}-throttles
-firmer dirt ($4.55\!\to\!4.43$, below even no compensation) and raises
-tracking error, because the required offset is not a static function of
-$\hat n$ alone --- it varies with instantaneous speed, curvature, and
-load transfer, which the integral tracks online and a terrain-indexed
-map cannot. Stacking feedforward and integral matches the DOB's speed
-but inflates clay CTE ($0.06\!\to\!0.11\,$m). The longitudinal
-disturbance-rejection burden is therefore genuinely adaptive: the DOB is
-not a tunable patch over a poor model but a necessary closed-loop
-element.
-
-\begin{table}[!t]
-  \renewcommand{\arraystretch}{1.15}
-  \caption{Feedforward sinkage-drag vs.\ the reactive DOB --- mean speed
-    ratio (achieved $\bar u$ / reference), sinusoidal path,
-    $v\!\in\!\{5,7\}\,$m/s, two seeds. \emph{off}: neither;
-    \emph{ffdrag}: feedforward drag, DOB off; \emph{DOB}: reactive
-    observer. The feedforward term helps where calibrated (sand, dirt)
-    but trails the DOB on every terrain.}
-  \label{tab:ffdrag}
-  \centering
-  \setlength{\tabcolsep}{6pt}
-  \begin{tabular}{lccc}
-    \toprule
-    \textbf{Terrain} & \textbf{off} & \textbf{ffdrag} & \textbf{DOB}\\
-    \midrule
-    clay & $0.53$ & $0.54$ & $\mathbf{0.70}$\\
-    dirt & $0.82$ & $0.85$ & $\mathbf{0.88}$\\
-    sand & $0.60$ & $0.64$ & $\mathbf{0.67}$\\
-    \bottomrule
-  \end{tabular}
-\end{table}
 
 %======================================================================
 \section{Two-Layer Obstacle Avoidance}
@@ -1578,19 +1516,16 @@ is what teleoperation requires.
 \subsection{Human-in-the-loop safety-filter protocol}
 \label{sec:safety_hil}
 
-The safety filter exists to screen a \emph{human operator's}
-delayed commands; the framework therefore includes a human-in-the-loop
-(HIL) protocol in addition to the autonomous sweeps reported below. A
-human drives the HMMWV through the rock field from the Chrono::Sensor
-driver point-of-view using a Logitech G29 steering wheel, while the
-sim-side filter screens the operator commands immediately before
-vehicle actuation. Each round delays \emph{both} teleoperation
-channels: the operator command path (uplink) by
-$\Delta_\mathrm{cmd} \in \{0, 0.15, 0.30\}\,\mathrm{s}$ and the
-driver-camera feed (downlink) by
-$\Delta_\mathrm{cam} = s\,\Delta_\mathrm{cmd}$, where the camera-delay
-scale $s$ defaults to $1.0$ for a symmetric link. The same script
-supports a profile-driven delay for learned 5G traces.
+The safety filter screens a \emph{human operator's} delayed commands, so
+the framework includes a human-in-the-loop (HIL) protocol alongside the
+autonomous sweeps below. An operator drives the HMMWV over the
+deformable terrain and obstacle field from the Chrono::Sensor camera view
+with a Logitech G29 wheel, while the sim-side filter screens each command
+immediately before actuation. Every round delays \emph{both} channels:
+the command uplink by
+$\Delta_\mathrm{cmd} \in \{0, 0.15, 0.30\}\,\mathrm{s}$ and the camera
+downlink by $\Delta_\mathrm{cam} = s\,\Delta_\mathrm{cmd}$ ($s=1.0$ for a
+symmetric link); a profile-driven delay supplies the learned 5G traces.
 
 The HIL layer reuses the same command contract, swappable safety filters,
 latency injection, and metric pipeline as the autonomous evaluation, logging
@@ -1602,20 +1537,17 @@ field, with the live heads-up display overlaying the delayed command and the
 filtered command actually sent to the vehicle.
 
 \paragraph{Scope.}
-The HIL pipeline is included to show the framework can drive a real human operator
-end-to-end --- G29 input, Chrono::Sensor camera POV, the live HUD, and
-per-channel latency, all through the same command contract and safety filter as
-the autonomous stack (Fig.~\ref{fig:hil_hud}). This is a systems and control
-paper, not a human-factors study, so the \emph{quantitative} safety evaluation
-is deliberately not a human-operator comparison (which would carry inter-operator
-variance and a separate experimental protocol). We instead validate the filter
-with the deterministic \emph{counterfactual} of Sec.~\ref{sec:safety_convoy}:
-replaying a fixed command trace (filter-off versus DOB-CBF-on) over the
-\emph{identical} scenario, so the collision-prevention measurement is paired and
-reproducible. The traces used are worst-case ``drive-into-the-hazard'' commands
-that stress the filter; because the simulator is deterministic, the same replay
-machinery can also be applied to recorded G29 traces without changing the
-evaluation code.
+The HIL pipeline shows the framework can drive a real operator end-to-end
+--- G29 input, Chrono::Sensor camera POV, live HUD, and per-channel
+latency, all through the same contract and filter as the autonomous stack
+(Fig.~\ref{fig:hil_hud}). The \emph{quantitative} safety results come not
+from human rounds --- which carry inter-operator variance --- but from the
+deterministic \emph{counterfactual} of Sec.~\ref{sec:safety_convoy}: a
+fixed command trace replayed filter-off versus DOB-CBF-on over the
+\emph{identical} scenario, giving a paired, reproducible
+collision-prevention measurement. The traces are worst-case
+``drive-into-the-hazard'' commands; since the simulator is deterministic,
+the same machinery replays recorded G29 traces unchanged.
 
 \begin{figure}[!t]
   \centering
@@ -1644,14 +1576,12 @@ matrix (405 trials per filter; 1215 trials total across three filters).
 The same matrix is re-evaluated with the planner's in-horizon barriers
 re-enabled in Sec.~\ref{sec:safety_aware}.
 Table~\ref{tab:safety_blind} and Fig.~\ref{fig:safety_blind} report the
-safety-filter-only outcome. Because the planner's reference here is
-deliberately routed through the obstacles, crosstrack error would conflate
-the beneficial avoidance manoeuvre with poor tracking and is therefore not
-reported; intrusiveness is instead measured \emph{directly}, by how often a
-filter overrides the planner (intervention rate) and how hard it corrects
-the command (mean absolute steering and throttle correction,
-$|\Delta\mathrm{steer}|$, $|\Delta\mathrm{thr}|$) --- the intent-preservation
-cost a teleoperator would feel. We compare the deployed DOB-CBF against no
+safety-filter-only outcome. Because the planner is deliberately routed through the obstacles,
+crosstrack error is not reported (it would conflate avoidance with poor
+tracking); intrusiveness is measured directly, by intervention rate and
+the mean absolute steering/throttle correction ($|\Delta\mathrm{steer}|$,
+$|\Delta\mathrm{thr}|$) --- the intent-preservation cost a teleoperator
+feels. We compare the deployed DOB-CBF against no
 filter and a textbook minimum-deviation \emph{vanilla CBF-QP} baseline --- the
 same barrier and QP, but without the disturbance observer, the neural traction
 surrogate, or the reactive-steering layer. Both filters cut collisions sharply
@@ -1870,36 +1800,33 @@ clearance of $-2.23\,$m into $+2.25\,$m. It does so at small command deviation
 the obstacle-type-aware QP steers around static rocks but is willing to brake
 behind a vehicle.
 
-The same machinery replays a \emph{recorded} G29 trace unchanged, so logged
-human intent is a drop-in input to this protocol. We replayed ten such drives
---- the five convoy scenarios under both a good and a congested learned 5G
-profile (Sec.~\ref{sec:latency}), the operator driving on the \emph{delayed}
-camera feed and through the delayed command path (glass-to-glass) --- filter-off
-vs DOB-CBF (Fig.~\ref{fig:teleop_cf}). Under this genuinely hard condition the
-operator collided in five of the ten drives; DOB-CBF cut that to two, a net
-\emph{three of five averted}, and lifted the median minimum clearance from
-$0.15$ to $4.42\,$m at a modest command deviation
-($|\Delta\delta|\!\approx\!0.04$, $|\Delta\tau|\!\approx\!0.15$, below the
-scripted-intent case and near-inert on the good link). It prevented \emph{all
-four} forward-collision cases the operator hit --- both convoys, the congested
-lead-brake, and the congested platoon ($-0.69\!\to\!+10.3\,$m). Its two residual
-collisions mark the filter's limits, which we report rather than hide: a
-rear-approach, which a forward-collision filter cannot prevent by construction
-(the operator hit it too), and one congested stalled-vehicle case where the
-filter, rather than committing to the operator's wide lateral bypass, braked the
-truck to a near-stop ($|\Delta\tau|\!=\!0.37$). The braking is itself a safe
-response; the resulting $0.5\,$m contact is largely an artifact of open-loop
-counterfactual replay --- with the filter running $5\times$ slower than the
-operator's recorded drive, the operator's post-pass \emph{steering}, replayed on
-the still-approaching slowed vehicle, drifts it laterally into the stalled
-vehicle's corner (a closed-loop operator would see the stall and adapt). It
-nonetheless marks two real limits we report rather than hide: the filter is
-over-conservative on a stationary blocker under heavy delay (it stops rather
-than swerving), and open-loop command replay loses fidelity when the filter
-substantially alters the speed profile. On genuine human intent the filter thus
-restores large clearance margins on the cases it is designed for, without
-fighting a capable driver. (Single operator; a multi-operator study is left to
-future work.)
+The same machinery replays a \emph{recorded} G29 trace unchanged, turning
+logged human intent into a drop-in input. We replayed ten such drives ---
+the five convoy scenarios under a good and a congested 5G profile
+(Sec.~\ref{sec:latency}), driven glass-to-glass on the delayed camera and
+command paths --- filter-off versus DOB-CBF (Fig.~\ref{fig:teleop_cf}).
+The operator collided in five of the ten drives; DOB-CBF cut that to two
+(three of five averted) and lifted the median minimum clearance from
+$0.15$ to $4.42\,$m at small command deviation
+($|\Delta\delta|\!\approx\!0.04$, $|\Delta\tau|\!\approx\!0.15$, near-inert
+on the good link). It prevented all four \emph{forward}-collision cases
+--- both convoys, the congested lead-brake, and the congested platoon
+($-0.69\!\to\!+10.3\,$m).
+
+The two residual collisions mark the filter's scope. One is a
+rear-approach, which a forward-collision filter cannot prevent by
+construction (the operator hit it too). The other is a congested
+stalled-vehicle case where the filter braked to a near-stop instead of
+committing to the operator's wide bypass; the resulting $0.5\,$m contact
+is largely a replay artifact --- the filter runs $5\times$ slower than the
+recorded drive, so the operator's post-pass steering, replayed on the
+slowed vehicle, drifts it into the stall (a live operator would adapt).
+These expose two real limits: the filter is over-conservative on a
+stationary blocker under heavy delay, and open-loop replay loses fidelity
+when the filter substantially alters the speed profile. On genuine human
+intent the filter restores large clearance margins on the cases it is
+designed for without fighting a capable driver (single operator; a
+multi-operator study is future work).
 
 \begin{table}[!t]
   \renewcommand{\arraystretch}{1.10}
