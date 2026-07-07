@@ -195,13 +195,16 @@ a terrain-dependent motion-resistance bias that the disturbance observer
 \end{figure}
 
 A controlled retrain isolates the rig-versus-whole-vehicle question with matched
-architectures: on a 432-run planner-only sweep the pre-retrain rig advantage
-narrows to a static-only effect (rig-static 0.090 vs.\ vehicle-static 0.116~m;
-the rate variants tie within noise). The deployed rate model is, in fact, the
-\emph{worst} of the four on per-tick force RMSE yet the most reliable in closed
-loop: its smoother, lower-amplitude $F_y$ trace under-predicts transient peaks
-but avoids a catastrophic failure mode the static checkpoint exhibits, which is
-why it is the deployed default.
+architectures (432-run planner-only sweep). Once architecture and training
+terrain are matched, the two generations track within noise: mean RMS crosstrack
+error spans just 0.090--0.116~m across all six surrogates, with the rig
+checkpoints marginally best (rig-static 0.090~m) and the deployed whole-vehicle
+rate model mid-pack (0.105~m). The whole-vehicle model is therefore deployed not
+because it wins this canonical-terrain sweep but because it is trained on the
+operating-point distribution the controller actually visits and generalises to
+off-manifold soils; within that generation, rate augmentation mainly reduces the
+worst-case tail relative to the static variant (max CTE 0.30 vs.\ 0.33~m, with a
+markedly smaller spread) rather than improving mean accuracy.
 
 An open-loop check confirms the NMPC's internal predictions match the plant
 (Fig.~\ref{fig:pred}): heading drift stays below 0.15~rad over the 4~s horizon on
