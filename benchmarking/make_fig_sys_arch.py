@@ -83,7 +83,7 @@ BOXES = {
                   "Collision Warning",                                                  SWAP_EDGE,  SWAP_FILL),
     # ---------- row 4: plant ----------
     "sim"      : ( 6.0, Y_ROW4, 3.4, 0.95,
-                  "Chrono Simulation\nHMMWV + SCM patch (Chrono::HIL plant)",           CTRL_EDGE,  CTRL_FILL),
+                  "Chrono Simulation\nHMMWV + SCM patch (Project Chrono plant)",         CTRL_EDGE,  CTRL_FILL),
 }
 
 
