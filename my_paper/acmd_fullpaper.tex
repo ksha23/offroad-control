@@ -194,6 +194,59 @@ a terrain-dependent motion-resistance bias that the disturbance observer
   \end{center}
 \end{figure}
 
+A controlled retrain isolates the rig-versus-whole-vehicle question with matched
+architectures: on a 432-run planner-only sweep the pre-retrain rig advantage
+narrows to a static-only effect (rig-static 0.090 vs.\ vehicle-static 0.116~m;
+the rate variants tie within noise). The deployed rate model is, in fact, the
+\emph{worst} of the four on per-tick force RMSE yet the most reliable in closed
+loop: its smoother, lower-amplitude $F_y$ trace under-predicts transient peaks
+but avoids a catastrophic failure mode the static checkpoint exhibits, which is
+why it is the deployed default.
+
+An open-loop check confirms the NMPC's internal predictions match the plant
+(Fig.~\ref{fig:pred}): heading drift stays below 0.15~rad over the 4~s horizon on
+every terrain, while the kinematic longitudinal model over-predicts speed on firm
+soil and under-predicts on soft dirt. A feature-headroom study
+(Table~\ref{tab:feat}) locates this at the model level: supplying the full causal
+dynamic state improves front-axle $F_y$ by 14\%, but the longitudinal channel
+sits at its feature floor ($\le$3\%) and rear-axle $F_y$ is a structural floor
+(within 4\% even when handed oracle sinkage). The soft-soil speed bias is thus a
+dynamics-level motion-resistance term the disturbance observer absorbs online
+(\S\ref{sec:speed}), not a learnable tire feature.
+
+\begin{table}[t]
+  \begin{center}
+    \tabcaption{Per-axle held-out force RMSE (N) as causal, MPC-available dynamic
+      features are added to the deployed rate surrogate. Front $F_y$ improves
+      14\%; $F_x$ and rear $F_y$ sit at their feature floors.}
+    \vspace{1mm}
+    \small
+    \begin{tabular}{lcccc}
+      \toprule
+      & \multicolumn{2}{c}{\textbf{$F_x$ (N)}} & \multicolumn{2}{c}{\textbf{$F_y$ (N)}}\\
+      \textbf{Surrogate inputs} & front & rear & front & rear\\
+      \midrule
+      Deployed (rate)             & 433 & 579 & 377 & 444\\
+      $+$ dynamic state \& rates  & 419 & 573 & \textbf{326} & 429\\
+      \midrule
+      Change                      & $-3\%$ & $-1\%$ & $\mathbf{-14\%}$ & $-4\%$\\
+      \bottomrule
+    \end{tabular}
+    \label{tab:feat}
+  \end{center}
+\end{table}
+
+\begin{figure}[t]
+  \begin{center}
+    \includegraphics[width=0.98\textwidth]{rollout_prediction_validation.png}
+    \figcaption{Open-loop NMPC prediction vs.\ the Chrono plant (firm sand). The
+      predicted horizons trace the path geometry and heading accurately, but the
+      over-predicted longitudinal speed carries each predicted endpoint ahead of
+      the vehicle --- the motion-resistance bias the throttle observer absorbs.}
+    \label{fig:pred}
+  \end{center}
+\end{figure}
+
 %------------------------------------------------------------
 \section{ONLINE TERRAIN ESTIMATION}
 The deployed estimator is a state-augmented unscented Kalman filter (Fused-UKF)
@@ -251,6 +304,35 @@ backends.
   \end{center}
 \end{figure}
 
+A separate ablation isolates the estimator's deployable value directly. Holding
+the controller's terrain prior at dirt regardless of the plant terrain gives a
+wrong-prior baseline, compared on the same matrix against the matched-prior
+oracle and the estimator-on variant (Table~\ref{tab:wrongprior}). On clay the
+wrong dirt prior yields 1.53~m RMS crosstrack error; the estimator adapts from
+the same dirt initialisation to 0.63~m, close to the matched-prior oracle
+(0.49~m) --- closing $\approx$86\% of the prior-mismatch gap on the harder
+terrain, with no prior terrain knowledge.
+
+\begin{table}[t]
+  \begin{center}
+    \tabcaption{Wrong-prior ablation: RMS crosstrack error (m) with the
+      controller's terrain prior fixed to dirt regardless of plant terrain, vs.\
+      the matched-prior oracle and the estimator-on variant (60 runs).}
+    \vspace{1mm}
+    \small
+    \begin{tabular}{lccc}
+      \toprule
+      \textbf{Variant} & \textbf{Clay} & \textbf{Sand} & \textbf{Mean}\\
+      \midrule
+      Matched static prior (oracle)   & 0.486 & 0.056 & 0.271\\
+      Wrong (dirt) static prior        & 1.528 & 0.061 & 0.794\\
+      Estimator-on (dirt $\to$ adapt)  & 0.632 & 0.059 & 0.346\\
+      \bottomrule
+    \end{tabular}
+    \label{tab:wrongprior}
+  \end{center}
+\end{table}
+
 %------------------------------------------------------------
 \section{SPEED PLANNING AND DISTURBANCE OBSERVER}
 \label{sec:speed}
@@ -271,6 +353,19 @@ over-speed bias. It raises achieved speed by $\approx$5\%
 ($0.61\!\to\!0.64$ of the g--g profile) at a $\sim$2\,mm tracking cost. The bias
 is terrain-dependent and sign-varying (firm soil over-predicts speed, soft dirt
 under-predicts), so an adaptive observer beats a fixed feedforward drag term.
+
+\begin{figure}[t]
+  \begin{center}
+    \includegraphics[width=0.98\textwidth]{speed_profile_gg.png}
+    \figcaption{Terrain-aware g--g speed profile vs.\ the geometric curvature
+      reference. \textbf{(a)} Per-cell RMS crosstrack error: the soft-soil
+      high-speed cells drop to the trackable cluster while benign cells are
+      unchanged. \textbf{(b)} Speed/accuracy trade: each cell trades a little
+      mean speed for a large error reduction. Grip limits come live from the tire
+      model at $\hat n$.}
+    \label{fig:gg}
+  \end{center}
+\end{figure}
 
 %------------------------------------------------------------
 \section{OBSTACLE AVOIDANCE AND LATENCY ROBUSTNESS}
@@ -302,7 +397,20 @@ the lowest intervention rate of any configuration. Under the learned 5G profile
 per-channel delays), DOB-CBF cuts collisions by 88\% (2.74$\to$0.34 per run). A
 paired blind-vs-aware ablation confirms the gain is the \emph{delay awareness},
 not merely having a filter: the gap grows with delay, and by 0.5~s awareness
-removes the residual collisions the delay-blind filter still suffers.
+removes the residual collisions the delay-blind filter still suffers
+(Fig.~\ref{fig:lat}).
+
+\begin{figure}[t]
+  \begin{center}
+    \includegraphics[width=0.80\textwidth]{latency_awareness_ablation.png}
+    \figcaption{Latency-awareness dose-response: the same worst-case commands
+      replayed with the DOB-CBF filter told the command delay (aware) or not
+      (blind). At zero delay the two coincide; the gap grows with delay, and by
+      0.5~s awareness removes the residual collisions at comparable
+      intrusiveness.}
+    \label{fig:lat}
+  \end{center}
+\end{figure}
 
 \begin{table}[t]
   \begin{center}
@@ -332,6 +440,27 @@ removes the residual collisions the delay-blind filter still suffers.
     \label{fig:cf}
   \end{center}
 \end{figure}
+
+\begin{table}[t]
+  \begin{center}
+    \tabcaption{Planner-aware vs.\ planner-blind safety sweep (1620 runs). The
+      two-layer stack (barrier $+$ DOB-CBF) drives collisions to 0.12/run while
+      reducing intervention and command deviation.}
+    \vspace{1mm}
+    \small
+    \begin{tabular}{lccc}
+      \toprule
+      \textbf{Variant} & \textbf{Coll./run} & \textbf{Clearance (m)} & \textbf{Interv.\ (\%)}\\
+      \midrule
+      None, blind          & 3.05 & $-1.83$ & ---\\
+      None, aware          & 0.57 & $+0.40$ & ---\\
+      DOB-CBF, blind       & 0.68 & $+0.38$ & 58\\
+      \textbf{DOB-CBF, aware} & \textbf{0.12} & $\mathbf{+2.03}$ & \textbf{40}\\
+      \bottomrule
+    \end{tabular}
+    \label{tab:aware}
+  \end{center}
+\end{table}
 
 %------------------------------------------------------------
 \section{TERRAIN- AND LATENCY-AWARE COLLISION WARNING}
@@ -387,6 +516,26 @@ statistical safety claim.
     \label{fig:hero}
   \end{center}
 \end{figure}
+
+%------------------------------------------------------------
+\section{RELATED WORK}
+Two recent threads are directly adjacent. Onozuka et al.~\cite{Onozuka25} fold
+soil mechanics into a physics-informed tire structure --- a Janosi shear law
+wrapped around small networks whose coefficients are re-fit online --- which is
+complementary to our approach of estimating the soil and re-conditioning an
+unstructured surrogate around it. Adapting their tire model into our per-axle
+acados interface improved offline force prediction ($R^2_{F_y}$ from 0.35 to
+0.59) but did not run stably in our in-horizon NMPC, whose static formulation
+triggered solver failures on aggressive transients; since their model targets a
+dedicated curvilinear-coordinate, wheelspeed-state MPC we did not reimplement,
+this is a note on complementarity, not a comparison. Gupta et
+al.~\cite{Gupta24} add a reinforcement-learning residual on top of MPC; on this
+plant such a residual closed under 8\% of the tracking error and only at the
+largest model mismatch, so we do not adopt RL compensation. Against these, the
+present contribution is orthogonal: not a better tire law or residual, but the
+\emph{integration} of terrain adaptation, online estimation, delay-compensated
+safety, and advisory warning on one plant, where their cross-layer couplings can
+be measured.
 
 %------------------------------------------------------------
 \section{CONCLUSIONS}
