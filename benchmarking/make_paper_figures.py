@@ -16,7 +16,6 @@ SCM logs --- no Chrono). Run the sweeps first if the data is stale:
     python benchmarking/brake_test.py                  # brake stops
     python benchmarking/collision_warning_test.py      # FCW lead times
     python benchmarking/open_loop_terrain_estimator_benchmark.py
-    python benchmarking/rig_vs_vehicle_tire_sweep.py
     # §VI UKF estimator benches (collect once, then this script re-plots):
     python benchmarking/bench_terrain_estimators_lhs.py --open-loop-throttle 0.75 --out-name lhs100_fair
     python benchmarking/bench_terrain_estimators_lhs.py --open-loop-throttle -1 --target-speed 5 --log-suffix _cl --out-name lhs100_cl
@@ -92,17 +91,10 @@ STEPS = [
                                  [PY, "-u", str(HERE / "make_fig_warning_ui.py")]),
     ("benchmark_suite (Sec X: suite coverage, from run.py --dry-run)",
                                  [PY, "-u", str(HERE / "make_fig_benchmark_suite.py")]),
-    ("fig1_force_4way (Fig 5)",  [PY, "-u", str(HERE / "make_fig1_4way.py")]),
-    ("rollout_prediction_validation (predicted-horizon fan vs plant; reads the "
-     "run.py rollout_diag LOG_MPC_PREDICTIONS sweep)",
-                                 [PY, "-u", str(HERE / "rollout_prediction_validation.py")]),
 ]
 
 # figures a sweep writes into its own result folder; copy to the paper name
 COPIES = [
-    ("rig_vs_vehicle_paired_bars_v2 (Fig 4)",
-     "rig_vs_vehicle_tire_sweep_*/rig_vs_vehicle_paired_bars.png",
-     "rig_vs_vehicle_paired_bars_v2.png"),
     ("integrated_hero_run (fig:integrated_hero)",
      "integrated_hero_run_*/integrated_hero_run.png",
      "integrated_hero_run.png"),

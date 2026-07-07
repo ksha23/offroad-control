@@ -51,7 +51,7 @@ def parse_args() -> argparse.Namespace:
                         "dob_cbf_ablation, throttle_dob_ablation, "
                         "autonomous_obstacle_tire, terrain_estimator, terrain_transition, "
                         "latency_profile, latency_compensation, "
-                        "tire_model_with_estimator_ablation, rig_vs_vehicle, ff_drag, "
+                        "tire_model_with_estimator_ablation, ff_drag, "
                         "collision_warning, brake_test, convoy_cf, bench_estimators_fair, "
                         "bench_estimators_cl, cl_estimator_fused, cl_estimator_all, "
                         "estimator_lhs_manifold, open_loop_terrain_estimator, "
@@ -154,7 +154,7 @@ def build_commands(args: argparse.Namespace) -> list[SuiteCommand]:
         "autonomous_obstacle_tire", "terrain_estimator", "latency_compensation",
         "throttle_dob_ablation", "safety_planner_aware",
         "tire_model_with_estimator_ablation", "terrain_transition",
-        "rig_vs_vehicle", "ff_drag", "collision_warning", "convoy_cf",
+        "ff_drag", "collision_warning", "convoy_cf",
         "open_loop_terrain_estimator",
         "integrated_hero", "latency_awareness", "rollout_diag", "speed_profile",
     ])}
@@ -201,11 +201,6 @@ def build_commands(args: argparse.Namespace) -> list[SuiteCommand]:
         # the cl_estimator comparisons write figures/CSVs directly and have no
         # quick knob, so they are exercised only at pilot/paper tier.
         commands.append(SuiteCommand(
-            "rig_vs_vehicle",
-            python_cmd("rig_vs_vehicle_tire_sweep.py", "--quick",
-                       "--base-port", str(ports["rig_vs_vehicle"])),
-            1, "Quick rig-vs-vehicle smoke run."))
-        commands.append(SuiteCommand(
             "ff_drag",
             python_cmd("ff_drag_ablation.py", "--terrains", "clay", "--speeds", "5",
                        "--seeds", "1", "--base-port", str(ports["ff_drag"])),
@@ -224,7 +219,7 @@ def build_commands(args: argparse.Namespace) -> list[SuiteCommand]:
             2, "Quick convoy-counterfactual smoke run."))
         return filter_commands(commands, args.only)
 
-    tire_models = ["pacejka", "tmeasy", "vehicle_rate"]
+    tire_models = ["pacejka", "tmeasy", "rig_rate"]
     commands.append(SuiteCommand(
         "tire_models",
         python_cmd("mpc_tire_model_sweep.py", "--models", *tire_models, *common,
@@ -381,15 +376,6 @@ def build_commands(args: argparse.Namespace) -> list[SuiteCommand]:
     #      reproduces EVERY table and figure from one command. Each uses its
     #      own script-appropriate matrix (not the shared grid). ----
 
-    # Controlled rig-vs-whole-vehicle surrogate sweep (script default 6-surrogate
-    # x 72-cell matrix; ~432 runs). tab:tires_rig_vs_vehicle.
-    commands.append(SuiteCommand(
-        "rig_vs_vehicle",
-        python_cmd("rig_vs_vehicle_tire_sweep.py",
-                   "--base-port", str(ports["rig_vs_vehicle"])),
-        432,
-        "Controlled rig-vs-whole-vehicle tire-surrogate sweep (tab:tires_rig_vs_vehicle).",
-    ))
 
     # Feedforward sinkage-drag vs reactive DOB (sinusoidal, v in {5,7}). tab:ffdrag.
     commands.append(SuiteCommand(

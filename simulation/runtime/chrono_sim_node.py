@@ -1883,7 +1883,7 @@ def main():
     p.add_argument("--dob-bandwidth", type=float, default=10.0)
     p.add_argument("--cbf-flavor", type=str, default="balance",
                    choices=["balance", "steer_priority", "throttle_priority"])
-    p.add_argument("--nn-model", type=str, default="vehicle_rate_64_32_lhs",
+    p.add_argument("--nn-model", type=str, default="rig_rate_64_32",
                    help="NN model version directory for CBF traction limits")
     p.add_argument("--no-safety-nn", action="store_true",
                    help="Disable the NN tire model inside the safety filter. "

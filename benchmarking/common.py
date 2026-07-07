@@ -26,9 +26,9 @@ SIM_DIR = PROJECT_ROOT / "simulation"
 LAUNCHER = SIM_DIR / "runtime" / "launch_decoupled.py"
 LOGS_DIR = PROJECT_ROOT / "logs"
 RESULTS_ROOT = Path(__file__).resolve().parent / "results"
-# DEFAULT_NN_MODEL is the active whole-vehicle surrogate used by paper
+# DEFAULT_NN_MODEL is the deployed rig-trained tire surrogate used by paper
 # sweeps that do not explicitly set --nn-model.
-DEFAULT_NN_MODEL = "vehicle_rate_64_32_lhs"
+DEFAULT_NN_MODEL = "rig_rate_64_32"
 
 PATHS = ("sinusoidal", "lane_change", "right_left")
 TERRAINS = ("clay", "dirt", "sand")
@@ -584,9 +584,8 @@ DISPLAY_LABELS = {
     "closed_loop_v2_both_axles_rate_32_16": "Vehicle NN rate",
     "closed_loop_v3_axle_rate_mlp": "Vehicle NN axle-rate",
     "closed_loop_v3_axle_rate_64_32": "Vehicle NN axle-rate",
-    "vehicle_rate_64_32_lhs": "Vehicle NN rate",
-    "vehicle_rate_32_16_lhs": "Vehicle NN rate",
-    "vehicle_static_32_16_lhs": "Vehicle NN static",
+    "rig_rate_64_32": "Rig NN rate",
+    "rig_static_32_16": "Rig NN static",
     "nn_static": "NN static prior",
     "nn_estimator": "NN live n estimator",
     "nn_wrong_prior": "NN wrong prior",

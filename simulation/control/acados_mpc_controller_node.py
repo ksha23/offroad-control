@@ -17,7 +17,7 @@ Subscribes: VehicleState from simulation node
 Publishes:  ControlCommand to simulation node
 
 Usage:
-    python acados_mpc_controller_node.py --nn-model vehicle_rate_64_32_lhs --terrain sand --path sinusoidal
+    python acados_mpc_controller_node.py --nn-model rig_rate_64_32 --terrain sand --path sinusoidal
     python acados_mpc_controller_node.py --model pacejka --terrain dirt --path lane_change
 """
 
@@ -1877,7 +1877,7 @@ def main():
                    help="Tire model: nn (neural network), pacejka (rigid-terrain "
                         "defaults), pacejka-oracle (terrain-fitted mu/B, fair "
                         "comparison upper bound), or tmeasy")
-    p.add_argument("--nn-model", default="vehicle_rate_64_32_lhs",
+    p.add_argument("--nn-model", default="rig_rate_64_32",
                    help="NN model version directory (only used when --model nn)")
     p.add_argument("--kappa", default="measured", choices=["zero", "approx", "measured"])
     p.add_argument("--no-lat-transfer", action="store_true",

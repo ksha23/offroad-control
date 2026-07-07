@@ -23,7 +23,7 @@ def task(c):
              "--terrain-estimator-mode", "n", "--te-update-interval", "8",
              "--te-min-confidence", "0.0"]
     r = launch_and_collect(experiment="cl_est_all", variant=bk, controller_mode="standard",
-        mpc_model="nn", nn_model="vehicle_rate_64_32_lhs", terrain=terr, path="sinusoidal",
+        mpc_model="nn", nn_model="rig_rate_64_32", terrain=terr, path="sinusoidal",
         speed=sp, bumpiness=0, seed=sd,
         run_dir=Path(f"/tmp/ttrans/clestall/{bk}_{terr}_v{sp:g}_s{sd}"),
         sim_port=port, ctrl_port=port + 1, sim_time=22.0, timeout=500.0,

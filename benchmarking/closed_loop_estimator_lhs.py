@@ -70,7 +70,7 @@ def _run_one(t: Task):
              "--terrain-estimator-mode", "n", "--te-update-interval", "8",
              "--te-min-confidence", "0.0"]
     r = launch_and_collect(experiment="cl_lhs", variant=t.bk, controller_mode="standard",
-        mpc_model="nn", nn_model="vehicle_rate_64_32_lhs", terrain="dirt", path="sinusoidal",
+        mpc_model="nn", nn_model="rig_rate_64_32", terrain="dirt", path="sinusoidal",
         speed=5.0, bumpiness=0, seed=720,
         run_dir=Path(f"/tmp/ttrans/cl_lhs/{t.bk}_{t.idx}"),
         sim_port=t.sim_port, ctrl_port=t.ctrl_port, sim_time=20.0, timeout=500.0,

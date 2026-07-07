@@ -39,7 +39,6 @@ THEME_COLOR = {
 LABELS = {
     "tire_models": ("Static tire benchmark", "Tire surrogate"),
     "tire_model_with_estimator_ablation": ("Live-estimator tire benchmark", "Tire surrogate"),
-    "rig_vs_vehicle": ("Rig-vs-vehicle retrain", "Tire surrogate"),
     "rollout_diag": ("Open-loop prediction", "Tire surrogate"),
     "terrain_estimator": ("Estimator (window-MLP)", "Terrain estimator"),
     "terrain_transition": ("Terrain transition", "Terrain estimator"),

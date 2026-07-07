@@ -139,7 +139,7 @@ Examples:
                         "treat v_ref as an overspeed cap.")
     p.add_argument("--obstacle-weight", type=float, default=5e3,
                    help="Standard-MPC soft obstacle-barrier weight.")
-    p.add_argument("--nn-model", default="vehicle_rate_64_32_lhs")
+    p.add_argument("--nn-model", default="rig_rate_64_32")
     p.add_argument("--kappa", default="measured", choices=["zero", "approx", "measured"])
     p.add_argument("--no-lat-transfer", action="store_true")
     p.add_argument("--no-delay-comp", action="store_true")

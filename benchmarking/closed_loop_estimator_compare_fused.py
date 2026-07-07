@@ -13,7 +13,7 @@ def task(c):
     extra=["--terrain-estimator","--terrain-estimator-backend",backends[bk],"--terrain-estimator-mode","n",
            "--te-update-interval","8","--te-min-confidence","0.0"]
     r=launch_and_collect(experiment="cl_estimator_fused",variant=bk,controller_mode="standard",mpc_model="nn",
-        nn_model="vehicle_rate_64_32_lhs",terrain=terr,path="sinusoidal",speed=sp,bumpiness=0,seed=sd,
+        nn_model="rig_rate_64_32",terrain=terr,path="sinusoidal",speed=sp,bumpiness=0,seed=sd,
         run_dir=Path(f"/tmp/ttrans/clestf/{bk}_{terr}_v{sp:g}_s{sd}"),sim_port=port,ctrl_port=port+1,
         sim_time=22.0,timeout=400.0,lead_in=5.0,metric_start=10.0,extra_args=extra)
     if r.status!="ok" or not r.diag_csv: return (bk,terr,sp,sd,"fail",float('nan'),float('nan'))
