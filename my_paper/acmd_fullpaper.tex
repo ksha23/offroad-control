@@ -49,8 +49,8 @@ default is an intent-preserving, minimum-deviation disturbance-observer control
 barrier function (DOB-CBF) suited to teleoperation. A terrain- and latency-aware
 forward collision warning reuses the same tire model for a soil-conditioned
 braking budget and advises the operator without overriding commands. The plant
-is Chrono::Vehicle within Chrono::HIL, driven by a synthetic 5G latency trace on
-the command and camera channels. Across repeatable simulation experiments the
+is Chrono::Vehicle from the open-source Project Chrono multi-physics engine,
+driven by a synthetic 5G latency trace on the command and camera channels. Across repeatable simulation experiments the
 neural stack cuts median RMS crosstrack error by 39--41\% versus SCM-calibrated
 Pacejka and TMeasy baselines, concentrated in off-nominal cells; the fused
 estimator tracks the sinkage exponent to 3.8\% median error, the best of four
@@ -78,9 +78,9 @@ online terrain estimator that re-conditions that model from onboard sensors;
 downstream safety filter) for autonomous and teleoperated commands; and (iv) a
 terrain- and latency-aware forward collision warning that reuses the same tire
 model for an advisory channel when an override-style filter is undesirable. All
-four share one Chrono::Vehicle plant inside Chrono::HIL~\cite{Zhou23}, one
-message stream, and one benchmarking harness, so the main comparisons run on one
-matrix. The contribution is the \emph{integration}: evaluating these layers
+four share one Chrono::Vehicle plant (Project Chrono~\cite{Tasora16,Serban19}),
+one message stream, and one benchmarking harness, so the main comparisons run on
+one matrix. The contribution is the \emph{integration}: evaluating these layers
 head-to-head on shared infrastructure exposes cross-layer interactions that
 isolated studies cannot, such as the safety filter and the collision warning
 both re-using the controller's tire model for their traction and braking
@@ -91,9 +91,12 @@ the full ablation set.
 \section{FRAMEWORK}
 The runtime is organised around six extension points (Fig.~\ref{fig:arch},
 Table~\ref{tab:swap}), each declared as a typed interface with a registry.
-Chrono::Vehicle simulates an HMMWV on an SCM~\cite{Krenn09} patch within
-Chrono::HIL. The simulation and controller run as separate processes and
-exchange messages over ROS~2 topics through Chrono::ROS, so any node that
+Chrono::Vehicle, the ground-vehicle module of the open-source Project Chrono
+multi-physics engine~\cite{Tasora16,Serban19}, simulates an HMMWV on an
+SCM~\cite{Krenn09} patch; the human-in-the-loop evaluation is inspired by
+Chrono::HIL~\cite{Zhou23}. The simulation and controller run as separate
+processes and exchange messages over ROS~2 topics through Chrono::ROS, so any
+node that
 subscribes to the vehicle state and publishes a control command can replace the
 NMPC without touching the simulator; this is how the tire-model variants are
 evaluated. Human teleoperation reduces to the same normalised steering,
