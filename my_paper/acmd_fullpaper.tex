@@ -141,42 +141,40 @@ $(\kappa,\alpha,F_z,u)$, steering rate, and the six Bekker--Mohr soil parameters
 to longitudinal and lateral forces $(F_x,F_y)$. Extending the static map of
 Dallas et al.~\cite{Dallas21}, a rate-augmented variant adds the steering rate
 as an input so the model represents the transient force during fast steering.
-The model exports as a CasADi expression through which the acados solver
-auto-differentiates at every horizon stage. The deployed model is trained on
-$\sim$1.85\,M tuples from 800 closed-loop HMMWV runs whose soil parameters are
-Latin-hypercube-sampled over a broad Bekker--Mohr box that \emph{encloses} the
-clay, dirt and sand presets as interior points, so accuracy on those terrains is
-interpolation and generalisation is measured on held-out slices.
+The surrogate is trained on controlled single-tire SCM sweeps --- one tire on a
+virtual test rig, stepped over a grid of operating points with the exact SCM
+force logged at each (the reproducible protocol of~\cite{Dallas21}). Every
+training label is therefore exact, no closed-loop feedback confounds the
+supervision, and the data collection parallelises trivially. The trained model
+exports as a CasADi expression through which the acados solver
+auto-differentiates at every horizon stage.
 
-Table~\ref{tab:tire} reports the live-estimator benchmark (1620 closed-loop
-runs) against Pacejka and TMeasy baselines calibrated to the SCM plant's mean
-lateral friction ($\mu=0.42$). The neural model conditioned on the matched
-terrain preset is a near-oracle reference; with the online estimator recovering
-the soil online it nearly matches that row (median 0.177 vs.\ 0.174~m) while
-requiring no prior terrain knowledge, and both cut median RMS crosstrack error
-by 39--41\% versus the analytical baselines. The gain is concentrated in the
-off-nominal cells (dirt, higher speed) where the fixed force laws lose grip
-(Fig.~\ref{fig:cte}); on benign cells the medians are comparable. A controlled
-retrain confirms the whole-vehicle model is the right default once its training
-data spans the same operating box as the rig; the longitudinal channel retains
-a terrain-dependent motion-resistance bias that the disturbance observer
-(\S\ref{sec:speed}) absorbs online rather than a tire-model feature deficit.
+Table~\ref{tab:tire} reports the static-terrain benchmark against Pacejka and
+TMeasy baselines calibrated to the SCM plant's mean lateral friction
+($\mu=0.42$). The neural surrogate cuts mean RMS crosstrack error by XX\% versus
+both analytical baselines, a gain concentrated in the off-nominal cells (dirt,
+higher speed) where the fixed force laws lose grip (Fig.~\ref{fig:cte}); on
+benign cells the models are comparable. The longitudinal channel carries a
+terrain-dependent motion-resistance bias that the throttle disturbance observer
+(\S\ref{sec:speed}) absorbs online rather than a tire-model deficit, and
+conditioning the surrogate on the online terrain estimate (\S\ref{sec:est})
+recovers near-oracle tracking with no prior terrain knowledge.
 
 \begin{table}[t]
   \begin{center}
-    \tabcaption{Live-estimator tire-model benchmark (median RMS crosstrack
-      error, 1620 runs). Both neural rows reduce error 39--55\% versus the
-      SCM-calibrated analytical baselines.}
+    \tabcaption{Static-terrain tire-model benchmark (mean $\pm$ std RMS
+      crosstrack error). The rig neural surrogate attains the lowest error,
+      XX\% below the SCM-calibrated analytical baselines.}
     \vspace{1mm}
     \small
+    % RIG-TODO: numbers pending rig_tire_model_sweep (pacejka/tmeasy/rig_rate); XX are placeholders.
     \begin{tabular}{lccc}
       \toprule
-      \textbf{Variant} & \textbf{CTE (m)} & \textbf{vs.\ Pacejka} & \textbf{vs.\ TMeasy}\\
+      \textbf{Tire model} & \textbf{RMS CTE (m)} & \textbf{Speed ratio} & \textbf{Solve (ms)}\\
       \midrule
-      Pacejka (static)          & 0.29 & --- & ---\\
-      TMeasy (static)           & 0.28 & --- & ---\\
-      NN rate-MLP (static)      & 0.13 & $-55\%$ & $-53\%$\\
-      NN rate-MLP $+$ estimator & 0.17 & $-41\%$ & $-39\%$\\
+      Pacejka             & XX & XX & XX\\
+      TMeasy              & XX & XX & XX\\
+      Rig NN rate-MLP     & \textbf{XX} & XX & XX\\
       \bottomrule
     \end{tabular}
     \label{tab:tire}
@@ -194,64 +192,9 @@ a terrain-dependent motion-resistance bias that the disturbance observer
   \end{center}
 \end{figure}
 
-A controlled retrain isolates the rig-versus-whole-vehicle question with matched
-architectures (432-run planner-only sweep). Once architecture and training
-terrain are matched, the two generations track within noise: mean RMS crosstrack
-error spans just 0.090--0.116~m across all six surrogates, with the rig
-checkpoints marginally best (rig-static 0.090~m) and the deployed whole-vehicle
-rate model mid-pack (0.105~m). The whole-vehicle model is therefore deployed not
-because it wins this canonical-terrain sweep but because it is trained on the
-operating-point distribution the controller actually visits and generalises to
-off-manifold soils; within that generation, rate augmentation mainly reduces the
-worst-case tail relative to the static variant (max CTE 0.30 vs.\ 0.33~m, with a
-markedly smaller spread) rather than improving mean accuracy.
-
-An open-loop check confirms the NMPC's internal predictions match the plant
-(Fig.~\ref{fig:pred}): heading drift stays below 0.15~rad over the 4~s horizon on
-every terrain, while the kinematic longitudinal model over-predicts speed on firm
-soil and under-predicts on soft dirt. A feature-headroom study
-(Table~\ref{tab:feat}) locates this at the model level: supplying the full causal
-dynamic state improves front-axle $F_y$ by 14\%, but the longitudinal channel
-sits at its feature floor ($\le$3\%) and rear-axle $F_y$ is a structural floor
-(within 4\% even when handed oracle sinkage). The soft-soil speed bias is thus a
-dynamics-level motion-resistance term the disturbance observer absorbs online
-(\S\ref{sec:speed}), not a learnable tire feature.
-
-\begin{table}[t]
-  \begin{center}
-    \tabcaption{Per-axle held-out force RMSE (N) as causal, MPC-available dynamic
-      features are added to the deployed rate surrogate. Front $F_y$ improves
-      14\%; $F_x$ and rear $F_y$ sit at their feature floors.}
-    \vspace{1mm}
-    \small
-    \begin{tabular}{lcccc}
-      \toprule
-      & \multicolumn{2}{c}{\textbf{$F_x$ (N)}} & \multicolumn{2}{c}{\textbf{$F_y$ (N)}}\\
-      \textbf{Surrogate inputs} & front & rear & front & rear\\
-      \midrule
-      Deployed (rate)             & 433 & 579 & 377 & 444\\
-      $+$ dynamic state \& rates  & 419 & 573 & \textbf{326} & 429\\
-      \midrule
-      Change                      & $-3\%$ & $-1\%$ & $\mathbf{-14\%}$ & $-4\%$\\
-      \bottomrule
-    \end{tabular}
-    \label{tab:feat}
-  \end{center}
-\end{table}
-
-\begin{figure}[t]
-  \begin{center}
-    \includegraphics[width=0.98\textwidth]{rollout_prediction_validation.png}
-    \figcaption{Open-loop NMPC prediction vs.\ the Chrono plant (firm sand). The
-      predicted horizons trace the path geometry and heading accurately, but the
-      over-predicted longitudinal speed carries each predicted endpoint ahead of
-      the vehicle --- the motion-resistance bias the throttle observer absorbs.}
-    \label{fig:pred}
-  \end{center}
-\end{figure}
-
 %------------------------------------------------------------
 \section{ONLINE TERRAIN ESTIMATION}
+\label{sec:est}
 The deployed estimator is a state-augmented unscented Kalman filter (Fused-UKF)
 that estimates the Bekker sinkage exponent $n$ jointly with the bicycle state
 and fuses \emph{two} measurement channels: a whole-vehicle lateral-force
