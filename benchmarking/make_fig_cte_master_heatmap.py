@@ -20,16 +20,16 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
-# Newest mpc_tire_model_sweep results (the reproduced full 1215-run matrix).
-SRC = sorted((ROOT / "benchmarking" / "results").glob("mpc_tire_model_sweep_*/results.csv"),
+# Newest tire-model sweep results (rig-only: pacejka/tmeasy/rig_rate).
+SRC = sorted((ROOT / "benchmarking" / "results").glob("*tire_model_sweep_*/results.csv"),
              key=lambda p: p.stat().st_mtime)[-1]
 OUT = ROOT / "my_paper" / "paper_figures" / "cte_master_heatmap.png"
 
-VARIANT_ORDER = ["pacejka", "tmeasy", "vehicle_rate"]
+VARIANT_ORDER = ["pacejka", "tmeasy", "rig_rate"]
 VARIANT_LABEL = {
     "pacejka": "Pacejka\n(analytical)",
     "tmeasy": "TMeasy\n(analytical)",
-    "vehicle_rate": "Vehicle NN\nrate-MLP",
+    "rig_rate": "Rig NN\nrate-MLP",
 }
 TERRAINS = ["clay", "dirt", "sand"]
 PATHS = ["sinusoidal", "lane_change", "right_left"]
@@ -75,12 +75,14 @@ def main():
     for t_end in (3, 6):
         ax.axhline(t_end - 0.5, color="black", lw=1.0)
 
+    total = int(counts.sum())
+    per_cell = int(np.median(counts[counts > 0])) if (counts > 0).any() else 0
     cb = fig.colorbar(im, ax=ax, fraction=0.04, pad=0.03)
-    cb.set_label("Mean RMS CTE (m), n=15 runs per cell", fontsize=10)
+    cb.set_label(f"Mean RMS CTE (m), n$\\approx${per_cell} runs per cell", fontsize=10)
 
     ax.set_title(
         "Closed-loop tracking error by terrain × path × tire model\n"
-        "(1215 runs total, averaged over 3 speeds × 3 bumpiness × 5 seeds per cell)",
+        f"({total} runs total, averaged over speeds × bumpiness × seeds per cell)",
         fontsize=10.5)
     fig.tight_layout()
     fig.savefig(OUT, dpi=200, bbox_inches="tight")

@@ -151,8 +151,9 @@ auto-differentiates at every horizon stage.
 
 Table~\ref{tab:tire} reports the static-terrain benchmark against Pacejka and
 TMeasy baselines calibrated to the SCM plant's mean lateral friction
-($\mu=0.42$). The neural surrogate cuts mean RMS crosstrack error by XX\% versus
-both analytical baselines, a gain concentrated in the off-nominal cells (dirt,
+($\mu=0.42$). The neural surrogate cuts mean RMS crosstrack error by
+$\approx$60\% versus both analytical baselines
+($0.13$ vs.\ $0.32$~m), a gain concentrated in the off-nominal cells (dirt,
 higher speed) where the fixed force laws lose grip (Fig.~\ref{fig:cte}); on
 benign cells the models are comparable. The longitudinal channel carries a
 terrain-dependent motion-resistance bias that the throttle disturbance observer
@@ -163,18 +164,19 @@ recovers near-oracle tracking with no prior terrain knowledge.
 \begin{table}[t]
   \begin{center}
     \tabcaption{Static-terrain tire-model benchmark (mean $\pm$ std RMS
-      crosstrack error). The rig neural surrogate attains the lowest error,
-      XX\% below the SCM-calibrated analytical baselines.}
+      crosstrack error; 72 runs per model over 3 terrains $\times$ 3 paths
+      $\times$ 2 speeds $\times$ 2 bumpiness $\times$ 2 seeds). The rig neural
+      surrogate attains the lowest error, $\approx$60\% below the SCM-calibrated
+      analytical baselines.}
     \vspace{1mm}
     \small
-    % RIG-TODO: numbers pending rig_tire_model_sweep (pacejka/tmeasy/rig_rate); XX are placeholders.
     \begin{tabular}{lccc}
       \toprule
       \textbf{Tire model} & \textbf{RMS CTE (m)} & \textbf{Speed ratio} & \textbf{Solve (ms)}\\
       \midrule
-      Pacejka             & XX & XX & XX\\
-      TMeasy              & XX & XX & XX\\
-      Rig NN rate-MLP     & \textbf{XX} & XX & XX\\
+      Pacejka             & $0.32 \pm 0.43$ & 0.75 & 3.8\\
+      TMeasy              & $0.32 \pm 0.40$ & 0.74 & 4.0\\
+      Rig NN rate-MLP     & $\mathbf{0.13 \pm 0.08}$ & 0.74 & 11.2\\
       \bottomrule
     \end{tabular}
     \label{tab:tire}
