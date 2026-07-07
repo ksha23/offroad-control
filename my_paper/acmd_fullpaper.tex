@@ -431,11 +431,13 @@ lead time grows monotonically with both softer soil and longer delay.
 \begin{figure}[t]
   \begin{center}
     \includegraphics[width=0.98\textwidth]{warning_ui.png}
-    \figcaption{Operator forward-collision-warning overlay at three moments of a
-      straight-in approach (soft clay, 150~ms link), escalating
-      \textsc{green}$\to$\textsc{orange}$\to$\textsc{red}. Severity, clearance
-      vs.\ required stop, and the terrain brake budget $a_b(\hat n)$ are live
-      outputs of the deployed warning system.}
+    \figcaption{The operator's view: the Chrono::Sensor driver POV over the
+      deformable terrain and boulder field, with the live HUD (steering wheel and
+      throttle/brake bar, lower right) and the terrain- and latency-aware
+      forward-collision-warning overlay. The \textsc{red} banner and readouts ---
+      time-to-collision, clearance vs.\ required stopping distance, and the
+      terrain-conditioned brake budget $a_b(\hat n)$ --- are live outputs of the
+      deployed warning system (soft clay, 150~ms link).}
     \label{fig:ui}
   \end{center}
 \end{figure}
