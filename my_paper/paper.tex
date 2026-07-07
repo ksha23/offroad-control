@@ -68,7 +68,8 @@ default instance is an intent-preserving, minimum-deviation DOB-CBF
 suited to human teleoperation. A terrain- and latency-aware forward
 collision warning reuses the same tire model for a soil-conditioned
 braking budget, advising the operator without overriding commands. The
-plant is Chrono::Vehicle within Chrono::HIL, driven by a synthetic 5G
+plant is Chrono::Vehicle from the open-source Project Chrono multi-physics
+engine, driven by a synthetic 5G
 latency trace on the command and camera channels. In repeatable
 simulation experiments the terrain-aware neural stack reduces median RMS
 crosstrack error by $39$--$41\,\%$ against SCM-calibrated Pacejka and
@@ -112,7 +113,8 @@ both autonomous and teleoperated commands; and (iv) a terrain- and
 latency-aware forward collision warning that re-uses the same tire
 surrogate to provide an advisory channel when an override-style filter
 is undesirable. All four layers share the same Chrono::Vehicle plant
-inside Chrono::HIL, the same ROS~2 / Chrono::ROS messaging substrate, and
+(Project Chrono~\cite{Tasora16,Serban19}), the same ROS~2 / Chrono::ROS
+messaging substrate, and
 the same benchmarking harness, so the main comparisons run on one matrix.
 
 Concretely, this integration paper contributes:
@@ -204,9 +206,11 @@ interface. In the current implementation the safety filter, collision
 warning, and latency profile are registry-instantiated; command-source,
 tire-model, and terrain-estimator variants use the established
 CLI/factory paths while satisfying the same protocol boundaries.
-Chrono::Vehicle simulates
-an HMMWV on a Soil Contact Model (SCM)~\cite{Krenn09} patch within
-Chrono::HIL~\cite{Zhou23}. The simulation and controller
+Chrono::Vehicle, the ground-vehicle module of the open-source Project Chrono
+multi-physics engine~\cite{Tasora16,Serban19}, simulates
+an HMMWV on a Soil Contact Model (SCM)~\cite{Krenn09} patch; the
+human-in-the-loop evaluation is inspired by Chrono::HIL~\cite{Zhou23}. The
+simulation and controller
 nodes run as separate operating-system processes and exchange
 messages over ROS~2 (DDS) topics through Chrono::ROS: the sim
 publishes the chassis body
@@ -2439,8 +2443,9 @@ human-in-the-loop script.
 %======================================================================
 \section*{Acknowledgements}
 
-This work builds on the Chrono::HIL framework~\cite{Zhou23} and
-Project Chrono~\cite{Tasora16,Serban19}. The 5G traffic profile is
+This work is inspired by the Chrono::HIL framework~\cite{Zhou23} and built on
+the open-source Project Chrono multi-physics engine~\cite{Tasora16,Serban19,Krenn09}.
+The 5G traffic profile is
 generated using the public N-HiTS-5G implementation released with
 Choi et al.~\cite{Choi23}.
 
