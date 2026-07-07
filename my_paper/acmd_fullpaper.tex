@@ -152,8 +152,8 @@ auto-differentiates at every horizon stage.
 Table~\ref{tab:tire} reports the static-terrain benchmark against Pacejka and
 TMeasy baselines calibrated to the SCM plant's mean lateral friction
 ($\mu=0.42$). The neural surrogate cuts mean RMS crosstrack error by
-$\approx$60\% versus both analytical baselines
-($0.13$ vs.\ $0.32$~m), a gain concentrated in the off-nominal cells (dirt,
+$\approx$58\% versus both analytical baselines
+($0.16$ vs.\ $0.38$~m), a gain concentrated in the off-nominal cells (dirt,
 higher speed) where the fixed force laws lose grip (Fig.~\ref{fig:cte}); on
 benign cells the models are comparable. The longitudinal channel carries a
 terrain-dependent motion-resistance bias that the throttle disturbance observer
@@ -164,9 +164,9 @@ recovers near-oracle tracking with no prior terrain knowledge.
 \begin{table}[t]
   \begin{center}
     \tabcaption{Static-terrain tire-model benchmark (mean $\pm$ std RMS
-      crosstrack error; 72 runs per model over 3 terrains $\times$ 3 paths
-      $\times$ 2 speeds $\times$ 2 bumpiness $\times$ 2 seeds). The rig neural
-      surrogate attains the lowest error, $\approx$60\% below the SCM-calibrated
+      crosstrack error; 405 runs per model over 3 terrains $\times$ 3 paths
+      $\times$ 3 speeds $\times$ 3 bumpiness $\times$ 5 seeds). The rig neural
+      surrogate attains the lowest error, $\approx$58\% below the SCM-calibrated
       analytical baselines.}
     \vspace{1mm}
     \small
@@ -174,9 +174,9 @@ recovers near-oracle tracking with no prior terrain knowledge.
       \toprule
       \textbf{Tire model} & \textbf{RMS CTE (m)} & \textbf{Speed ratio} & \textbf{Solve (ms)}\\
       \midrule
-      Pacejka             & $0.32 \pm 0.43$ & 0.75 & 3.8\\
-      TMeasy              & $0.32 \pm 0.40$ & 0.74 & 4.0\\
-      Rig NN rate-MLP     & $\mathbf{0.13 \pm 0.08}$ & 0.74 & 11.2\\
+      Pacejka             & $0.38 \pm 0.50$ & 0.67 & 3.9\\
+      TMeasy              & $0.37 \pm 0.49$ & 0.66 & 4.0\\
+      Rig NN rate-MLP     & $\mathbf{0.16 \pm 0.12}$ & 0.66 & 11.2\\
       \bottomrule
     \end{tabular}
     \label{tab:tire}
