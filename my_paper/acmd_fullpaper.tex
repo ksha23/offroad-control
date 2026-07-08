@@ -42,7 +42,7 @@ safety filter, collision warning, tire model, terrain estimator, and latency
 profile. A differentiable neural tire model is embedded in an \emph{acados}
 nonlinear MPC (NMPC); an online force/proprioceptive estimator recovers the
 Bekker sinkage exponent and re-conditions the tire model from inertial and
-wheel-speed signals; and an asymmetric throttle disturbance observer removes the
+wheel-speed signals; and an asymmetric throttle disturbance observer reduces the
 residual soft-soil speed deficit. Obstacle avoidance is a two-layer stack:
 in-horizon NMPC barriers backed by a swappable downstream safety filter whose
 default is an intent-preserving, minimum-deviation disturbance-observer control
@@ -51,7 +51,7 @@ forward collision warning reuses the same tire model for a soil-conditioned
 braking budget and advises the operator without overriding commands. The plant
 is Chrono::Vehicle from the open-source Project Chrono multi-physics engine,
 driven by a synthetic 5G latency trace on the command and camera channels. Across repeatable simulation experiments the
-neural stack cuts median RMS crosstrack error by 39--41\% versus SCM-calibrated
+neural stack cuts mean RMS crosstrack error by $\approx$58\% versus SCM-calibrated
 Pacejka and TMeasy baselines, concentrated in off-nominal cells; the fused
 estimator tracks the sinkage exponent to 3.8\% median error, the best of four
 backends; the DOB-CBF filter cuts collisions by 88\% under the 5G profile, with
@@ -161,8 +161,8 @@ higher speed) where the fixed force laws lose grip (Fig.~\ref{fig:cte}); on
 benign cells the models are comparable. The longitudinal channel carries a
 terrain-dependent motion-resistance bias that the throttle disturbance observer
 (\S\ref{sec:speed}) absorbs online rather than a tire-model deficit, and
-conditioning the surrogate on the online terrain estimate (\S\ref{sec:est})
-recovers near-oracle tracking with no prior terrain knowledge.
+conditioning the surrogate on the live terrain estimate (\S\ref{sec:est})
+recovers most of the matched-prior benefit with no prior terrain knowledge.
 
 \begin{table}[t]
   \begin{center}
@@ -499,9 +499,9 @@ novelty is the integration: a differentiable SCM tire model, an online
 $n$-estimator that re-conditions it, swappable safety filters, and an advisory
 warning share one plant, one message stream, and one benchmarking harness, so
 the main cross-layer choices are measured on comparable matrices. The
-surrogate-plus-estimator recovers near-oracle tracking with no prior terrain
-knowledge; the fused proprioceptive-force UKF tracks the sinkage exponent to
-3.8\% median error; the DOB-CBF filter cuts collisions by 88\% under a learned
+surrogate-plus-estimator recovers most of the matched-prior benefit with no
+prior terrain knowledge; the fused proprioceptive-force UKF tracks the sinkage
+exponent to 3.8\% median error; the DOB-CBF filter cuts collisions by 88\% under a learned
 5G profile with a deterministic counterfactual attributing 36 of 45 averted
 collisions to it; and the collision warning predicts stopping distance to
 0.17~m. The study is entirely in simulation on Chrono's SCM and makes no
