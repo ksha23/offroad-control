@@ -42,7 +42,7 @@ safety filter, collision warning, tire model, terrain estimator, and latency
 profile. A differentiable neural tire model is embedded in an \emph{acados}
 nonlinear MPC (NMPC); an online force/proprioceptive estimator recovers the
 Bekker sinkage exponent and re-conditions the tire model from inertial and
-wheel-speed signals; and an asymmetric throttle disturbance observer removes the
+wheel-speed signals; and an asymmetric throttle disturbance observer reduces the
 residual soft-soil speed deficit. Obstacle avoidance is a two-layer stack:
 in-horizon NMPC barriers backed by a swappable downstream safety filter whose
 default is an intent-preserving, minimum-deviation disturbance-observer control
